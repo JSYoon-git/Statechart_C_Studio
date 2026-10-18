@@ -1,0 +1,181 @@
+{
+ "version": 4,
+ "package": "Debounce",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Button",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "raw",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "pressed",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "uint8_t",
+     "name": "debounceTicks",
+     "default": "2u",
+     "dir": "config"
+    },
+    {
+     "type": "int",
+     "name": "presses",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint8_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "rel": {
+      "kind": "state",
+      "name": "RELEASED",
+      "x": 60,
+      "y": 80,
+      "w": 160,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "pressed = false;",
+      "exit": "",
+      "reactions": []
+     },
+     "dp": {
+      "kind": "state",
+      "name": "WAIT_PRESS",
+      "x": 400,
+      "y": 80,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "pr": {
+      "kind": "state",
+      "name": "PRESSED",
+      "x": 400,
+      "y": 260,
+      "w": 160,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "pressed = true;",
+      "exit": "",
+      "reactions": []
+     },
+     "dr": {
+      "kind": "state",
+      "name": "WAIT_RELEASE",
+      "x": 60,
+      "y": 260,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "i0": {
+      "kind": "init",
+      "x": 30,
+      "y": 110,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "rel",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "rel",
+      "to": "dp",
+      "trigger": "",
+      "guard": "raw == true",
+      "action": "",
+      "bend": 20
+     },
+     "e2": {
+      "from": "dp",
+      "to": "rel",
+      "trigger": "",
+      "guard": "raw == false",
+      "action": "printf(\"튐 무시\\n\");",
+      "bend": 20
+     },
+     "e3": {
+      "from": "dp",
+      "to": "pr",
+      "trigger": "",
+      "guard": "cnt >= debounceTicks",
+      "action": "presses++;\nprintf(\"눌림 확정 (%d번째)\\n\", presses);",
+      "bend": 0
+     },
+     "e4": {
+      "from": "pr",
+      "to": "dr",
+      "trigger": "",
+      "guard": "raw == false",
+      "action": "",
+      "bend": 20
+     },
+     "e5": {
+      "from": "dr",
+      "to": "pr",
+      "trigger": "",
+      "guard": "raw == true",
+      "action": "",
+      "bend": 20
+     },
+     "e6": {
+      "from": "dr",
+      "to": "rel",
+      "trigger": "",
+      "guard": "cnt >= debounceTicks",
+      "action": "printf(\"떼짐 확정\\n\");",
+      "bend": 0
+     }
+    }
+   }
+  }
+ ]
+}

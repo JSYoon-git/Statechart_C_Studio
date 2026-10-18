@@ -1,0 +1,193 @@
+{
+ "version": 4,
+ "package": "Vending",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Machine",
+   "attributes": [
+    {
+     "type": "int16_t",
+     "name": "coin",
+     "default": "0",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "select",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "cancel",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "dispense",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "int",
+     "name": "price",
+     "default": "1000",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "dispenseTicks",
+     "default": "150u",
+     "dir": "config"
+    },
+    {
+     "type": "int",
+     "name": "credit",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "idle": {
+      "kind": "state",
+      "name": "IDLE",
+      "x": 40,
+      "y": 200,
+      "w": 150,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "dispense = false;\nprintf(\"동전을 넣으세요 (가격 %d원)\\n\", price);",
+      "exit": "",
+      "reactions": []
+     },
+     "col": {
+      "kind": "state",
+      "name": "COLLECTING",
+      "x": 380,
+      "y": 190,
+      "w": 180,
+      "h": 80,
+      "parent": null,
+      "region": 0,
+      "entry": "printf(\"현재 금액 %d원\\n\", credit);",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "coin > 0",
+        "action": "credit += coin;\nprintf(\"현재 금액 %d원\\n\", credit);"
+       }
+      ]
+     },
+     "disp": {
+      "kind": "state",
+      "name": "DISPENSING",
+      "x": 720,
+      "y": 200,
+      "w": 170,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\ndispense = true;\ncredit -= price;\nprintf(\"상품이 나옵니다. 거스름돈 %d원\\n\", credit);",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "c1": {
+      "kind": "cond",
+      "x": 620,
+      "y": 380,
+      "parent": null,
+      "region": 0
+     },
+     "i0": {
+      "kind": "init",
+      "x": 15,
+      "y": 230,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "idle",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "idle",
+      "to": "col",
+      "trigger": "",
+      "guard": "coin > 0",
+      "action": "credit += coin;",
+      "bend": 30
+     },
+     "e2": {
+      "from": "col",
+      "to": "idle",
+      "trigger": "",
+      "guard": "cancel == true",
+      "action": "printf(\"%d원 반환\\n\", credit);\ncredit = 0;",
+      "bend": 30
+     },
+     "e3": {
+      "from": "col",
+      "to": "c1",
+      "trigger": "",
+      "guard": "select == true",
+      "action": "",
+      "bend": -25
+     },
+     "e4": {
+      "from": "c1",
+      "to": "disp",
+      "trigger": "",
+      "guard": "credit >= price",
+      "action": "",
+      "bend": -25
+     },
+     "e5": {
+      "from": "c1",
+      "to": "col",
+      "trigger": "",
+      "guard": "else",
+      "action": "printf(\"금액이 부족합니다\\n\");",
+      "bend": -40
+     },
+     "e6": {
+      "from": "disp",
+      "to": "idle",
+      "trigger": "",
+      "guard": "cnt >= dispenseTicks",
+      "action": "credit = 0;",
+      "bend": 170
+     }
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,450 @@
+{
+ "version": 4,
+ "package": "Traffic",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "TrafficLight",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "pedestrian",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "fault",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "reset",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "uint16_t",
+     "name": "setGreen",
+     "default": "0",
+     "dir": "in"
+    },
+    {
+     "type": "uint8_t",
+     "name": "lamp",
+     "default": "0",
+     "dir": "out"
+    },
+    {
+     "type": "int",
+     "name": "cycles",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "redTicks",
+     "default": "200u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "yellowTicks",
+     "default": "100u",
+     "dir": "config"
+    },
+    {
+     "type": "uint32_t",
+     "name": "greenMs",
+     "default": "3000u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "blinkTicks",
+     "default": "50u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "alarmTicks",
+     "default": "300u",
+     "dir": "config"
+    },
+    {
+     "type": "int",
+     "name": "hurryAfterCycles",
+     "default": "2",
+     "dir": "config"
+    },
+    {
+     "type": "uint32_t",
+     "name": "greenCalls",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint32_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "blinkCnt",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "alarmCnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [
+    {
+     "name": "show",
+     "ret": "void",
+     "args": [
+      {
+       "type": "const char *",
+       "name": "what"
+      }
+     ],
+     "body": "printf(\"  light: %s (cycles=%d)\\n\", what, me->cycles);"
+    }
+   ],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "op": {
+      "kind": "state",
+      "name": "operating",
+      "x": 60,
+      "y": 60,
+      "w": 600,
+      "h": 360,
+      "parent": null,
+      "region": 0,
+      "entry": "",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       },
+       {
+        "trigger": "",
+        "guard": "setGreen > 0u",
+        "action": "greenMs = setGreen;"
+       }
+      ]
+     },
+     "i1": {
+      "kind": "init",
+      "x": 95,
+      "y": 130,
+      "parent": "op",
+      "region": 0
+     },
+     "hop": {
+      "kind": "hist",
+      "x": 95,
+      "y": 390,
+      "parent": "op",
+      "region": 0
+     },
+     "red": {
+      "kind": "state",
+      "name": "red",
+      "x": 130,
+      "y": 110,
+      "w": 150,
+      "h": 60,
+      "parent": "op",
+      "region": 0,
+      "entry": "cnt = 0;\nlamp = 0u;\ncycles++;\nTrafficLight_show(me, \"red\");",
+      "exit": "",
+      "reactions": []
+     },
+     "grn": {
+      "kind": "state",
+      "name": "green",
+      "x": 440,
+      "y": 110,
+      "w": 150,
+      "h": 70,
+      "parent": "op",
+      "region": 0,
+      "entry": "cnt = 0;\ngreenCalls = greenMs / 10u;\nlamp = 1u;\nTrafficLight_show(me, \"green\");",
+      "exit": "",
+      "reactions": []
+     },
+     "yel": {
+      "kind": "state",
+      "name": "yellow",
+      "x": 280,
+      "y": 310,
+      "w": 150,
+      "h": 60,
+      "parent": "op",
+      "region": 0,
+      "entry": "cnt = 0;\nlamp = 2u;\nTrafficLight_show(me, \"yellow\");",
+      "exit": "",
+      "reactions": []
+     },
+     "c1": {
+      "kind": "cond",
+      "x": 590,
+      "y": 270,
+      "parent": "op",
+      "region": 0
+     },
+     "flt": {
+      "kind": "state",
+      "name": "fault",
+      "x": 740,
+      "y": 60,
+      "w": 330,
+      "h": 360,
+      "parent": null,
+      "region": 0,
+      "entry": "lamp = 3u;\nTrafficLight_show(me, \"FAULT\");",
+      "exit": "",
+      "reactions": [],
+      "and": true,
+      "regions": [
+       {
+        "name": "blink"
+       },
+       {
+        "name": "alarm"
+       }
+      ]
+     },
+     "i2": {
+      "kind": "init",
+      "x": 765,
+      "y": 145,
+      "parent": "flt",
+      "region": 0
+     },
+     "on": {
+      "kind": "state",
+      "name": "lampOn",
+      "x": 790,
+      "y": 120,
+      "w": 110,
+      "h": 55,
+      "parent": "flt",
+      "region": 0,
+      "entry": "blinkCnt = 0;",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "blinkCnt++;"
+       }
+      ]
+     },
+     "dim": {
+      "kind": "state",
+      "name": "lampOff",
+      "x": 940,
+      "y": 120,
+      "w": 110,
+      "h": 55,
+      "parent": "flt",
+      "region": 0,
+      "entry": "blinkCnt = 0;",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "blinkCnt++;"
+       }
+      ]
+     },
+     "i3": {
+      "kind": "init",
+      "x": 765,
+      "y": 325,
+      "parent": "flt",
+      "region": 1
+     },
+     "bp": {
+      "kind": "state",
+      "name": "beeping",
+      "x": 790,
+      "y": 300,
+      "w": 110,
+      "h": 55,
+      "parent": "flt",
+      "region": 1,
+      "entry": "alarmCnt = 0;",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "alarmCnt++;"
+       }
+      ]
+     },
+     "sil": {
+      "kind": "state",
+      "name": "silent",
+      "x": 940,
+      "y": 300,
+      "w": 110,
+      "h": 50,
+      "parent": "flt",
+      "region": 1,
+      "entry": "",
+      "exit": "",
+      "reactions": []
+     },
+     "i0": {
+      "kind": "init",
+      "x": 30,
+      "y": 40,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i1",
+      "to": "red",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "red",
+      "to": "grn",
+      "trigger": "",
+      "guard": "cnt >= redTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e2": {
+      "from": "grn",
+      "to": "yel",
+      "trigger": "",
+      "guard": "cnt >= greenCalls",
+      "action": "",
+      "bend": 0
+     },
+     "e3": {
+      "from": "yel",
+      "to": "red",
+      "trigger": "",
+      "guard": "cnt >= yellowTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e4": {
+      "from": "grn",
+      "to": "c1",
+      "trigger": "",
+      "guard": "pedestrian == true",
+      "action": "",
+      "bend": -15
+     },
+     "e5": {
+      "from": "c1",
+      "to": "yel",
+      "trigger": "",
+      "guard": "cycles >= hurryAfterCycles",
+      "action": "TrafficLight_show(me, \"pedestrian: hurry\");",
+      "bend": -30
+     },
+     "e6": {
+      "from": "c1",
+      "to": "grn",
+      "trigger": "",
+      "guard": "else",
+      "action": "",
+      "bend": -25
+     },
+     "e7": {
+      "from": "i2",
+      "to": "on",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e8": {
+      "from": "i3",
+      "to": "bp",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e9": {
+      "from": "on",
+      "to": "dim",
+      "trigger": "",
+      "guard": "blinkCnt >= blinkTicks",
+      "action": "",
+      "bend": 18
+     },
+     "e10": {
+      "from": "dim",
+      "to": "on",
+      "trigger": "",
+      "guard": "blinkCnt >= blinkTicks",
+      "action": "",
+      "bend": 18
+     },
+     "e11": {
+      "from": "bp",
+      "to": "sil",
+      "trigger": "",
+      "guard": "alarmCnt >= alarmTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e12": {
+      "from": "i0",
+      "to": "op",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e13": {
+      "from": "op",
+      "to": "flt",
+      "trigger": "",
+      "guard": "fault == true",
+      "action": "",
+      "bend": 25
+     },
+     "e14": {
+      "from": "flt",
+      "to": "hop",
+      "trigger": "",
+      "guard": "reset == true",
+      "action": "",
+      "bend": -120
+     }
+    }
+   },
+   "ioStyle": "struct"
+  }
+ ]
+}

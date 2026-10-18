@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statechart Studio</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">Statechart Studio</div>
+  <div class="btns">
+    <div class="menuwrap">
+      <button id="bNew" title="New project">New ▾</button>
+      <div id="newMenu" class="menu" hidden>
+        <button data-new="blank" data-i18n title="Start an empty project">Blank project</button>
+        <div class="mhead" data-i18n>Beginner</div>
+        <button data-new="blink" data-i18n title="Two states take turns every 0.5 s. Learn: states, the default transition (●→), counting time (entry/ cnt = 0; reaction/ cnt++; [cnt &gt;= blinkTicks]), a config value set by Led_Init, output led">LED blink</button>
+        <button data-new="button_lamp" data-i18n title="A button input switches the lamp; forceOff keeps it off. Learn: inputs in guards, transition action before entry action">Lamp with a button</button>
+        <button data-new="traffic3" data-i18n title="Red → green → yellow, each for its own time. Learn: a three-state cycle, one counter reused by several states, output color">Three-color signal</button>
+        <div class="mhead" data-i18n>Intermediate</div>
+        <button data-new="vending" data-i18n title="coin input (a value such as 500) and select / cancel buttons. Learn: an input with a value [coin &gt; 0], condition connector ◇ with [else], internal reaction">Vending machine</button>
+        <button data-new="washer" data-i18n title="Fill → wash → rinse → spin. Resume after pause goes back to the step it stopped in. Learn: composite state, history H, a counter in the parent's reaction, struct arguments">Washing machine</button>
+        <button data-new="debounce" data-i18n title="In the 10 ms task, the button pin (raw) must read the same twice (20 ms) to count. Learn: the MCU debounce pattern">Button debounce</button>
+        <div class="mhead" data-i18n>Advanced</div>
+        <button data-new="trafficlight" data-i18n title="Crossing light. On a fault the lamp blinks and an alarm runs at the same time; reset returns to the previous light. Learn: AND state, history, a length taken at entry">Traffic light</button>
+        <button data-new="motor" data-i18n title="A controller and a motor; main.c passes one module's outputs to the other's inputs. Learn: two classes, several outputs, struct arguments">Motor control (2 modules)</button>
+        <button data-new="modem" data-i18n title="Retries after 1 s when a connection fails, gives up after 3 failures. Learn: junction, termination ⊗, no-answer timeout">Modem reconnect</button>
+      </div>
+    </div>
+    <button id="bOpen" title="Open a JSON file">Open</button>
+    <button id="bSave" title="Save as a JSON file (Ctrl+S)">Save</button>
+  </div>
+  <div class="btns right">
+    <button id="bLang" title="Language / 언어">한국어</button>
+    <button id="bGen" class="primary" title="Generate the C code">Generate C</button>
+    <button id="bCompile" class="primary" title="Compile every generated .c file (MSVC /W4). Errors and warnings go to the Problems tab">Build</button>
+  </div>
+  <input type="file" id="fileInput" accept=".json" hidden>
+</header>
+
+<div id="main">
+  <aside id="left">
+    <section>
+      <h3>Package</h3>
+      <input id="pkgName" class="ident" spellcheck="false">
+    </section>
+    <section>
+      <h3>Classes <button class="mini" id="addClass" title="Add a class">+</button></h3>
+      <ul id="classList" class="list"></ul>
+      <div class="hint" data-i18n>Click a class name to edit its X_Main, operations and links.</div>
+    </section>
+    <section>
+      <h3><span>Variables <span id="varOwner" class="owner"></span></span></h3>
+      <div id="varList"></div>
+      <div class="hint" data-i18n title="Input = an X_Main parameter i_name; output = the return value (one) or o_name pointers (several); config = an X_Init parameter c_name; internal = a struct member. In guards and actions just write the name, e.g. [(button == true) &amp;&amp; (count &gt;= 3)], count++;">Guards and actions use the names ⓘ</div>
+    </section>
+    <section>
+      <h3>Types / includes</h3>
+      <textarea id="types" rows="3" spellcheck="false" placeholder="#include &lt;stdio.h&gt;"></textarea>
+      <div class="hint" data-i18n>One per line, copied into the header as is.</div>
+    </section>
+  </aside>
+  <div id="leftResize" title="Drag to resize the left panel (double-click = default width)"></div>
+  <button id="leftToggle" title="Hide / show the left panel">‹</button>
+
+  <section id="center">
+    <div id="tools">
+      <button data-tool="select" title="Select / move (V)">&#x2196;</button>
+      <button data-tool="state" title="State (S) — drag to size it">&#x25AD;</button>
+      <button data-tool="trans" title="Transition (T) — drag from source to target">&#x2192;</button>
+      <button data-tool="init" title="Default transition (D) — drag inside a container to its target">&#x25CF;&#x2192;</button>
+      <button data-tool="cond" title="Condition connector (C): if / else branching">C</button>
+      <button data-tool="junction" title="Junction (J): merges transitions">J</button>
+      <button data-tool="hist" title="History connector (H)">H</button>
+      <button data-tool="term" title="Termination connector (X)">&#x2297;</button>
+      <span class="tsep"></span>
+      <button id="zoomFit" title="Fit to screen (F)">&#x2922;</button>
+      <button id="optimize" class="optbtn" data-i18n title="Optimize the layout: states in flow order, transitions curve around other states. Ctrl+Z to undo">✨ Tidy</button>
+    </div>
+    <svg id="canvas" tabindex="0">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowhead"></path>
+        </marker>
+        <marker id="arrowSel" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowhead sel"></path>
+        </marker>
+        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M20 0 L0 0 0 20" class="gridline"></path>
+        </pattern>
+      </defs>
+      <rect id="bg" x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid)"></rect>
+      <g id="world"></g>
+    </svg>
+    <div id="status"></div>
+    <div id="emptyHint" hidden>
+      <div class="eh-title" data-i18n>Draw a statechart</div>
+      <ol>
+        <li data-i18n>Pick the <b>▭ state</b> tool and drag on the canvas to make a box. Type a name and press Enter</li>
+        <li data-i18n>Point at the first state with a <b>●→ default transition</b></li>
+        <li data-i18n>Drag a <b>→ transition</b> from state to state and write its guard (e.g. <code>button == true</code>, <code>cnt &gt;= 50u</code>)</li>
+        <li data-i18n><b>Generate C</b> shows the code, <b>Build</b> compiles it</li>
+      </ol>
+      <div class="eh-alt" data-i18n>There are no events — guards read input variables. New here? Open <b>New ▾ → LED blink</b> first</div>
+    </div>
+  </section>
+
+  <aside id="right" hidden>
+    <button id="propsClose" title="Close (Esc)">✕</button>
+    <div id="props"></div>
+  </aside>
+</div>
+
+<div id="splitter"></div>
+<section id="bottom" class="closed">
+  <nav id="tabs">
+    <button data-tab="code" class="on">Code</button>
+    <button data-tab="problems">Problems <span id="probCount"></span></button>
+    <span class="grow"></span>
+    <button id="bottomToggle" title="Hide / show the bottom panel">▴</button>
+  </nav>
+  <div id="tab-code" class="tab on">
+    <div class="codebar">
+      <div id="fileTabs"></div>
+      <span class="grow"></span>
+      <button class="mini" id="copyCode">Copy</button>
+      <button class="mini" id="dlCode">Download</button>
+      <button class="mini" id="bZip" title="All .c/.h files as a zip">ZIP</button>
+    </div>
+    <div id="fileNote" class="fnote"></div>
+    <textarea id="codeEdit" spellcheck="false" hidden></textarea>
+    <pre id="code"><span class="dim" data-i18n>Press Generate C to see the generated code here.</span></pre>
+  </div>
+  <div id="tab-problems" class="tab"><ul id="problems"></ul></div>
+</section>
+<script src="i18n.js"></script>
+<script src="layout.js"></script>
+<script src="backend.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

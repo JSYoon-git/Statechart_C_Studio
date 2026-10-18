@@ -1,0 +1,30 @@
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh the Python sources Pyodide loads in the browser
+        run: |
+          mkdir -p editor/static/py
+          cp editor/model.py codegen/sc_ir.py codegen/rhp_c.py codegen/task_c.py editor/static/py/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: editor/static
+      - id: deployment
+        uses: actions/deploy-pages@v4

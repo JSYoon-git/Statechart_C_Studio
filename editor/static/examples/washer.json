@@ -1,0 +1,296 @@
+{
+ "version": 4,
+ "package": "Washer",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Washer",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "start",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "pause",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "resume",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "valve",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "bool",
+     "name": "motor",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "fillTicks",
+     "default": "200u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "washTicks",
+     "default": "300u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "rinseTicks",
+     "default": "200u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "spinTicks",
+     "default": "200u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "idle": {
+      "kind": "state",
+      "name": "IDLE",
+      "x": 30,
+      "y": 140,
+      "w": 130,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "printf(\"대기\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "run": {
+      "kind": "state",
+      "name": "RUNNING",
+      "x": 220,
+      "y": 40,
+      "w": 480,
+      "h": 270,
+      "parent": null,
+      "region": 0,
+      "entry": "motor = true;",
+      "exit": "motor = false;",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "ir": {
+      "kind": "init",
+      "x": 245,
+      "y": 85,
+      "parent": "run",
+      "region": 0
+     },
+     "h": {
+      "kind": "hist",
+      "x": 245,
+      "y": 280,
+      "parent": "run",
+      "region": 0
+     },
+     "fill": {
+      "kind": "state",
+      "name": "FILL",
+      "x": 270,
+      "y": 80,
+      "w": 140,
+      "h": 55,
+      "parent": "run",
+      "region": 0,
+      "entry": "cnt = 0;\nvalve = true;\nprintf(\"  물 받기\\n\");",
+      "exit": "valve = false;",
+      "reactions": []
+     },
+     "wash": {
+      "kind": "state",
+      "name": "WASH",
+      "x": 520,
+      "y": 80,
+      "w": 140,
+      "h": 55,
+      "parent": "run",
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"  세탁\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "rinse": {
+      "kind": "state",
+      "name": "RINSE",
+      "x": 520,
+      "y": 210,
+      "w": 140,
+      "h": 55,
+      "parent": "run",
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"  헹굼\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "spin": {
+      "kind": "state",
+      "name": "SPIN",
+      "x": 270,
+      "y": 210,
+      "w": 140,
+      "h": 55,
+      "parent": "run",
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"  탈수\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "paused": {
+      "kind": "state",
+      "name": "PAUSED",
+      "x": 380,
+      "y": 360,
+      "w": 140,
+      "h": 55,
+      "parent": null,
+      "region": 0,
+      "entry": "printf(\"일시정지\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "done": {
+      "kind": "state",
+      "name": "DONE",
+      "x": 30,
+      "y": 330,
+      "w": 130,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "printf(\"세탁 완료!\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "i0": {
+      "kind": "init",
+      "x": 40,
+      "y": 110,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "ir",
+      "to": "fill",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "i0",
+      "to": "idle",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e2": {
+      "from": "idle",
+      "to": "run",
+      "trigger": "",
+      "guard": "start == true",
+      "action": "",
+      "bend": 0
+     },
+     "e3": {
+      "from": "fill",
+      "to": "wash",
+      "trigger": "",
+      "guard": "cnt >= fillTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e4": {
+      "from": "wash",
+      "to": "rinse",
+      "trigger": "",
+      "guard": "cnt >= washTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e5": {
+      "from": "rinse",
+      "to": "spin",
+      "trigger": "",
+      "guard": "cnt >= rinseTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e6": {
+      "from": "spin",
+      "to": "done",
+      "trigger": "",
+      "guard": "cnt >= spinTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e7": {
+      "from": "run",
+      "to": "paused",
+      "trigger": "",
+      "guard": "pause == true",
+      "action": "",
+      "bend": 20
+     },
+     "e8": {
+      "from": "paused",
+      "to": "h",
+      "trigger": "",
+      "guard": "resume == true",
+      "action": "",
+      "bend": 20
+     },
+     "e9": {
+      "from": "done",
+      "to": "idle",
+      "trigger": "",
+      "guard": "start == true",
+      "action": "",
+      "bend": 0
+     }
+    }
+   },
+   "ioStyle": "struct"
+  }
+ ]
+}

@@ -1,0 +1,372 @@
+{
+ "version": 4,
+ "package": "Plant",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Controller",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "startCmd",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "stopCmd",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "atSpeed",
+     "default": "false",
+     "dir": "in",
+     "link": "Motor.atSpeed"
+    },
+    {
+     "type": "bool",
+     "name": "runCmd",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "targetRpm",
+     "default": "0",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "runRpm",
+     "default": "1500u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "startTimeoutTicks",
+     "default": "300u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "idle": {
+      "kind": "state",
+      "name": "IDLE",
+      "x": 40,
+      "y": 160,
+      "w": 150,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "runCmd = false;\nprintf(\"[제어기] 대기\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "st": {
+      "kind": "state",
+      "name": "STARTING",
+      "x": 460,
+      "y": 160,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"[제어기] 모터 기동 요청\\n\");",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "run": {
+      "kind": "state",
+      "name": "RUNNING",
+      "x": 860,
+      "y": 160,
+      "w": 150,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "printf(\"[제어기] 정상 운전\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "flt": {
+      "kind": "state",
+      "name": "FAULT",
+      "x": 460,
+      "y": 360,
+      "w": 150,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "runCmd = false;\nprintf(\"[제어기] 기동 실패!\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "i0": {
+      "kind": "init",
+      "x": 15,
+      "y": 190,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "idle",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "idle",
+      "to": "st",
+      "trigger": "",
+      "guard": "startCmd == true",
+      "action": "targetRpm = runRpm;\nrunCmd = true;",
+      "bend": 0
+     },
+     "e2": {
+      "from": "st",
+      "to": "run",
+      "trigger": "",
+      "guard": "atSpeed == true",
+      "action": "",
+      "bend": 0
+     },
+     "e3": {
+      "from": "st",
+      "to": "flt",
+      "trigger": "",
+      "guard": "cnt >= startTimeoutTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e4": {
+      "from": "run",
+      "to": "idle",
+      "trigger": "",
+      "guard": "stopCmd == true",
+      "action": "",
+      "bend": 110
+     },
+     "e5": {
+      "from": "flt",
+      "to": "idle",
+      "trigger": "",
+      "guard": "stopCmd == true",
+      "action": "",
+      "bend": 0
+     }
+    }
+   },
+   "ioStyle": "struct"
+  },
+  {
+   "name": "Motor",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "run",
+     "default": "false",
+     "dir": "in",
+     "link": "Controller.runCmd"
+    },
+    {
+     "type": "uint16_t",
+     "name": "target",
+     "default": "0",
+     "dir": "in",
+     "link": "Controller.targetRpm"
+    },
+    {
+     "type": "bool",
+     "name": "jam",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "atSpeed",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "rpm",
+     "default": "0",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "rampTicks",
+     "default": "10u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "rpmStep",
+     "default": "300u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "stop": {
+      "kind": "state",
+      "name": "STOPPED",
+      "x": 60,
+      "y": 120,
+      "w": 150,
+      "h": 60,
+      "parent": null,
+      "region": 0,
+      "entry": "rpm = 0u;\natSpeed = false;\nprintf(\"  [모터] 정지\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "on": {
+      "kind": "state",
+      "name": "ON",
+      "x": 300,
+      "y": 30,
+      "w": 470,
+      "h": 270,
+      "parent": null,
+      "region": 0,
+      "entry": "",
+      "exit": "",
+      "reactions": []
+     },
+     "ion": {
+      "kind": "init",
+      "x": 390,
+      "y": 140,
+      "parent": "on",
+      "region": 0
+     },
+     "ramp": {
+      "kind": "state",
+      "name": "RAMPING",
+      "x": 420,
+      "y": 115,
+      "w": 150,
+      "h": 70,
+      "parent": "on",
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"  [모터] %u rpm\\n\", (unsigned)rpm);",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "at": {
+      "kind": "state",
+      "name": "AT_SPEED",
+      "x": 590,
+      "y": 220,
+      "w": 150,
+      "h": 60,
+      "parent": "on",
+      "region": 0,
+      "entry": "atSpeed = true;\nprintf(\"  [모터] 목표 속도 %u rpm 도달\\n\", (unsigned)rpm);",
+      "exit": "",
+      "reactions": []
+     },
+     "i0": {
+      "kind": "init",
+      "x": 30,
+      "y": 150,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "ion",
+      "to": "ramp",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "ramp",
+      "to": "ramp",
+      "trigger": "",
+      "guard": "(cnt >= rampTicks) && (jam == false) && (rpm + rpmStep < target)",
+      "action": "rpm += rpmStep;",
+      "bend": 0
+     },
+     "e2": {
+      "from": "i0",
+      "to": "stop",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e3": {
+      "from": "stop",
+      "to": "on",
+      "trigger": "",
+      "guard": "run == true",
+      "action": "",
+      "bend": 0
+     },
+     "e4": {
+      "from": "ramp",
+      "to": "at",
+      "trigger": "",
+      "guard": "(cnt >= rampTicks) && (jam == false) && (rpm + rpmStep >= target)",
+      "action": "rpm = target;",
+      "bend": 0
+     },
+     "e5": {
+      "from": "on",
+      "to": "stop",
+      "trigger": "",
+      "guard": "run == false",
+      "action": "",
+      "bend": 40
+     }
+    }
+   },
+   "ioStyle": "struct"
+  }
+ ]
+}

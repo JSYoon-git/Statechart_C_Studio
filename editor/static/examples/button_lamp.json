@@ -1,0 +1,113 @@
+{
+ "version": 4,
+ "package": "Lamp",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Lamp",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "button",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "forceOff",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "lamp",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "int",
+     "name": "pressCount",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "off": {
+      "kind": "state",
+      "name": "LAMP_OFF",
+      "x": 110,
+      "y": 90,
+      "w": 170,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "lamp = false;\nprintf(\"램프 꺼짐\\n\");",
+      "exit": "",
+      "reactions": []
+     },
+     "on": {
+      "kind": "state",
+      "name": "LAMP_ON",
+      "x": 420,
+      "y": 90,
+      "w": 170,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "lamp = true;\nprintf(\"램프 켜짐 (%d번 눌림)\\n\", pressCount);",
+      "exit": "",
+      "reactions": []
+     },
+     "i0": {
+      "kind": "init",
+      "x": 70,
+      "y": 120,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "off",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "off",
+      "to": "on",
+      "trigger": "",
+      "guard": "(button == true) && (forceOff == false)",
+      "action": "pressCount++;",
+      "bend": 22
+     },
+     "e2": {
+      "from": "on",
+      "to": "off",
+      "trigger": "",
+      "guard": "button == true",
+      "action": "",
+      "bend": 22
+     },
+     "e3": {
+      "from": "on",
+      "to": "off",
+      "trigger": "",
+      "guard": "forceOff == true",
+      "action": "",
+      "bend": -50
+     }
+    }
+   }
+  }
+ ]
+}

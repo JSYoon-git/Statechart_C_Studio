@@ -1,0 +1,13 @@
+# only the Statechart Studio editor and its code generator are published
+/*
+!/.gitignore
+!/.github/
+!/README.md
+!/editor/
+!/codegen/
+__pycache__/
+*.pyc
+/editor/out/
+/editor/projects/
+/codegen/gen/
+/codegen/__pycache__/

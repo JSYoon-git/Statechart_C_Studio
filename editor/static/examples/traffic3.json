@@ -1,0 +1,156 @@
+{
+ "version": 4,
+ "package": "Signal",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Signal",
+   "attributes": [
+    {
+     "type": "uint8_t",
+     "name": "color",
+     "default": "0",
+     "dir": "out"
+    },
+    {
+     "type": "uint16_t",
+     "name": "redTicks",
+     "default": "300u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "greenTicks",
+     "default": "250u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "yellowTicks",
+     "default": "100u",
+     "dir": "config"
+    },
+    {
+     "type": "int",
+     "name": "cycle",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "red": {
+      "kind": "state",
+      "name": "RED",
+      "x": 100,
+      "y": 80,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\ncolor = 0u;\ncycle++;\nprintf(\"빨강 (%d번째 주기)\\n\", cycle);",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "green": {
+      "kind": "state",
+      "name": "GREEN",
+      "x": 420,
+      "y": 80,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\ncolor = 1u;\nprintf(\"초록\\n\");",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "yellow": {
+      "kind": "state",
+      "name": "YELLOW",
+      "x": 260,
+      "y": 240,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\ncolor = 2u;\nprintf(\"노랑\\n\");",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "i0": {
+      "kind": "init",
+      "x": 60,
+      "y": 115,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "red",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "red",
+      "to": "green",
+      "trigger": "",
+      "guard": "cnt >= redTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e2": {
+      "from": "green",
+      "to": "yellow",
+      "trigger": "",
+      "guard": "cnt >= greenTicks",
+      "action": "",
+      "bend": 0
+     },
+     "e3": {
+      "from": "yellow",
+      "to": "red",
+      "trigger": "",
+      "guard": "cnt >= yellowTicks",
+      "action": "",
+      "bend": 0
+     }
+    }
+   }
+  }
+ ]
+}

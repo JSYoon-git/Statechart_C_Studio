@@ -1,0 +1,233 @@
+{
+ "version": 4,
+ "package": "Modem",
+ "types": [
+  "#include <stdio.h>"
+ ],
+ "events": [],
+ "classes": [
+  {
+   "name": "Modem",
+   "attributes": [
+    {
+     "type": "bool",
+     "name": "connectOk",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "connectFail",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "uint16_t",
+     "name": "data",
+     "default": "0",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "hangup",
+     "default": "false",
+     "dir": "in"
+    },
+    {
+     "type": "bool",
+     "name": "online",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "int",
+     "name": "maxRetries",
+     "default": "3",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "answerTimeoutTicks",
+     "default": "200u",
+     "dir": "config"
+    },
+    {
+     "type": "uint16_t",
+     "name": "retryDelayTicks",
+     "default": "100u",
+     "dir": "config"
+    },
+    {
+     "type": "int",
+     "name": "retries",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "int",
+     "name": "bytes",
+     "default": "0",
+     "dir": "local"
+    },
+    {
+     "type": "uint16_t",
+     "name": "cnt",
+     "default": "0",
+     "dir": "local"
+    }
+   ],
+   "operations": [],
+   "assocs": [],
+   "init": "",
+   "chart": {
+    "nodes": {
+     "dial": {
+      "kind": "state",
+      "name": "DIALING",
+      "x": 80,
+      "y": 100,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\nretries++;\nprintf(\"연결 시도 %d/%d\\n\", retries, maxRetries);",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "wait": {
+      "kind": "state",
+      "name": "WAIT_RETRY",
+      "x": 60,
+      "y": 380,
+      "w": 160,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "cnt = 0;\nprintf(\"1초 후 다시 시도\\n\");",
+      "exit": "",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "",
+        "action": "cnt++;"
+       }
+      ]
+     },
+     "on": {
+      "kind": "state",
+      "name": "ONLINE",
+      "x": 460,
+      "y": 100,
+      "w": 170,
+      "h": 70,
+      "parent": null,
+      "region": 0,
+      "entry": "online = true;\nprintf(\"연결됨\\n\");\nretries = 0;",
+      "exit": "online = false;",
+      "reactions": [
+       {
+        "trigger": "",
+        "guard": "data > 0u",
+        "action": "bytes += data;\nprintf(\"수신 %u바이트 (누적 %d)\\n\", (unsigned)data, bytes);"
+       }
+      ]
+     },
+     "j": {
+      "kind": "junction",
+      "x": 380,
+      "y": 300,
+      "parent": null,
+      "region": 0
+     },
+     "x": {
+      "kind": "term",
+      "x": 660,
+      "y": 300,
+      "parent": null,
+      "region": 0
+     },
+     "i0": {
+      "kind": "init",
+      "x": 50,
+      "y": 135,
+      "parent": null,
+      "region": 0
+     }
+    },
+    "edges": {
+     "e0": {
+      "from": "i0",
+      "to": "dial",
+      "trigger": "",
+      "guard": "",
+      "action": "",
+      "bend": 0
+     },
+     "e1": {
+      "from": "dial",
+      "to": "on",
+      "trigger": "",
+      "guard": "connectOk == true",
+      "action": "",
+      "bend": 0
+     },
+     "e2": {
+      "from": "dial",
+      "to": "j",
+      "trigger": "",
+      "guard": "connectFail == true",
+      "action": "",
+      "bend": -25
+     },
+     "e3": {
+      "from": "dial",
+      "to": "j",
+      "trigger": "",
+      "guard": "cnt >= answerTimeoutTicks",
+      "action": "",
+      "bend": 25
+     },
+     "e4": {
+      "from": "j",
+      "to": "wait",
+      "trigger": "",
+      "guard": "retries < maxRetries",
+      "action": "",
+      "bend": 0
+     },
+     "e5": {
+      "from": "j",
+      "to": "x",
+      "trigger": "",
+      "guard": "else",
+      "action": "printf(\"3번 실패 - 포기합니다\\n\");",
+      "bend": 0
+     },
+     "e6": {
+      "from": "wait",
+      "to": "dial",
+      "trigger": "",
+      "guard": "cnt >= retryDelayTicks",
+      "action": "",
+      "bend": -30
+     },
+     "e7": {
+      "from": "on",
+      "to": "dial",
+      "trigger": "",
+      "guard": "hangup == true",
+      "action": "printf(\"끊김 - 다시 연결\\n\");",
+      "bend": 50
+     }
+    }
+   },
+   "ioStyle": "struct"
+  }
+ ]
+}
