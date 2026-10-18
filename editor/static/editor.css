@@ -220,7 +220,16 @@ h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: v
 
 button.primary.disabled { background: #cbd5e1; border-color: #cbd5e1; color: #fff; cursor: not-allowed; }
 button.primary.disabled:hover { filter: none; }
-#bCompile.ok::after { content: " ✓"; }
+#bGen.ok::after, #bCompile.ok::after { content: " ✓"; }
+/* Generate C / Build: green = up to date with the drawing, amber = built with warnings, red = build failed, spinner = running */
+button.primary.ok { background: #16a34a; border-color: #16a34a; }
+button.primary.warn { background: #d97706; border-color: #d97706; }
+button.primary.fail { background: #dc2626; border-color: #dc2626; }
+button.primary.busy { cursor: progress; pointer-events: none; }
+button.primary.busy::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px;
+  border: 2px solid rgba(255, 255, 255, .4); border-top-color: #fff; border-radius: 50%; animation: btnspin .7s linear infinite; }
+@keyframes btnspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { button.primary.busy::before { animation-duration: 2s; } }
 
 #tools button.optbtn { width: auto; padding: 0 10px; font-size: 13px; }
 

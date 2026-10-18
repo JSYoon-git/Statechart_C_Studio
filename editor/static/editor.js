@@ -49,16 +49,26 @@ function undo() {
   redoStack.push(JSON.stringify(project));
   project = JSON.parse(undoStack.pop());
   cur = Math.min(cur, project.classes.length - 1);
-  sel = null; refreshAll();
+  sel = null; refreshAll(); paintButtons();
 }
 function redo() {
   if (!redoStack.length) return;
   undoStack.push(JSON.stringify(project));
   project = JSON.parse(redoStack.pop());
-  sel = null; refreshAll();
+  sel = null; refreshAll(); paintButtons();
 }
 function save() {
   try { localStorage.setItem("scstudio.project", JSON.stringify(project)); } catch (e) { /* ignore */ }
+  paintButtons();
+}
+/* Generate C / Build: spinner while running; green while the result still matches the drawing (a snapshot of the
+   whole project is compared, so any change at all turns the button blue again); Build: amber = warnings, red = failed */
+let genSig = null, buildSig = null, buildState = "", genBusy = false, buildBusy = false;
+function paintButtons() {
+  const sig = JSON.stringify(project);
+  const set = (el, st) => { el.classList.remove("busy", "ok", "warn", "fail"); if (st) el.classList.add(st); };
+  set($("bGen"), genBusy ? "busy" : genSig === sig ? "ok" : "");
+  set($("bCompile"), buildBusy ? "busy" : buildSig === sig ? buildState : "");
 }
 
 // ------------------------------------------------------------------ geometry helpers
@@ -1540,9 +1550,11 @@ async function followCode() {
   try {
     if (lastGen.version !== editVersion) {          // the drawing changed: regenerate quietly
       if (validate()) return;
+      const sig = JSON.stringify(project);
       const g = await api("/api/generate", project);
-      g.version = editVersion;
+      g.version = editVersion; genSig = sig;
       showFiles(g);
+      paintButtons();
     }
     const loc = locateSelection(lastGen);
     if (!loc) return;
@@ -1584,13 +1596,17 @@ async function generateC() {
   autoDeclareEvents();
   if (validate()) { showTab("problems"); flash(_t("Fix the errors in the Problems tab first")); return null; }
   if (!confirmDefects(_t("Generate"))) return null;
+  const sig = JSON.stringify(project);
+  genBusy = true; paintButtons();
   try {
     const g = await api("/api/generate", project);
     g.version = editVersion;
+    genSig = sig;
     showFiles(g); showTab("code");
     requestAnimationFrame(followCode);
     return g;
   } catch (e) { alert(_t("Generation failed: ") + e.message); return null; }
+  finally { genBusy = false; paintButtons(); }
 }
 $("bGen").addEventListener("click", generateC);
 $("bZip").addEventListener("click", async () => {
@@ -1612,21 +1628,22 @@ async function build() {
   if (validate()) { showTab("problems"); flash(_t("Fix the errors in the Problems tab first")); return false; }
   if (!confirmDefects(_t("Build"))) return false;
   building = true;
-  $("bCompile").textContent = "Building…";
-  $("bCompile").classList.remove("ok");
+  const sig = JSON.stringify(project);
+  buildBusy = true; buildSig = null; paintButtons();
   try {
     const b = await api("/api/build", project);
     b.version = editVersion;
     showFiles(b);
     buildErrors = b.log.split("\n").filter((l) => l.trim());
     validate();
-    $("bCompile").classList.toggle("ok", b.ok && !buildErrors.length);
+    buildSig = sig; genSig = sig;                       // Build also produced the code on screen
+    buildState = !b.ok ? "fail" : buildErrors.length ? "warn" : "ok";
     if (!b.ok) { showTab("problems"); flash(_t("Build failed — see the Problems tab")); }
     else if (buildErrors.length) { showTab("problems"); flash(_t("Built with warnings — see the Problems tab"), true); }
     else flash(_t(serverMode ? "Built — no warnings (/W4)" : "Built — no warnings (clang, C89)"), true);
     return b.ok;
   } catch (e) { flash(_t("Build failed: ") + e.message); return false; }
-  finally { building = false; $("bCompile").textContent = "Build"; }
+  finally { building = false; buildBusy = false; paintButtons(); }
 }
 $("bCompile").addEventListener("click", build);
 
@@ -1652,7 +1669,7 @@ function loadProject(p) {
     migrateClass(c);                   // old projects: event triggers -> inputs, tm() -> counters
   }
   delete project.periodUs; delete project.utTest;
-  cur = 0; sel = null; lastGen = null; buildErrors = []; $("bCompile").classList.remove("ok");
+  cur = 0; sel = null; lastGen = null; buildErrors = []; genSig = buildSig = null;
 
   refreshAll(); zoomFit();
 }
