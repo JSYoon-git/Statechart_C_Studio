@@ -748,6 +748,7 @@ function autoDeclareEvents() {
   save(); refreshLeft(); validate(); render();
   flash(_t("Old events / tm() turned into variables: {0}", added.join(", ")), true);
 }
+let lastPropsKey = "";
 function refreshProps() {
   autoDeclareEvents();
   const P = $("props");
@@ -755,6 +756,9 @@ function refreshProps() {
   if (sel && sel.t === "node" && !nodes()[sel.id]) sel = null;
   if (sel && sel.t === "edge" && !edges()[sel.id]) sel = null;
   $("right").hidden = !sel;        // floats over the canvas: opening/closing never moves the drawing
+  const key = sel ? sel.t + ":" + sel.id : "";
+  if (sel && key !== lastPropsKey && isPhone()) setBottom(false);      // phone: picking something gives the room to its properties
+  lastPropsKey = key;
   if (!sel) return;
   requestAnimationFrame(placeCard);
   requestAnimationFrame(followCode);
@@ -1382,7 +1386,12 @@ $("dlCode").addEventListener("click", () => {
   if (lastGen && curFile) downloadText(curFile, lastGen.files[curFile]);
 });
 
+const isPhone = () => window.matchMedia("(max-width: 760px)").matches;
 function setBottom(open) {
+  if (open && isPhone()) {                                 // phone: the code panel and the properties sheet never share the screen
+    $("right").hidden = true;
+    requestAnimationFrame(() => requestAnimationFrame(zoomFit));    // the canvas got shorter: fit the drawing into what is left
+  }
   $("bottom").classList.toggle("closed", !open);
   $("splitter").classList.toggle("closed", !open);
   $("bottomToggle").textContent = open ? "▾" : "▴";
@@ -1704,9 +1713,10 @@ $("bLang").addEventListener("click", () => {
   applyLanguage();
   let p = null, firstVisit = false;
   try { p = JSON.parse(localStorage.getItem("scstudio.project") || "null"); } catch (e) { p = null; }
+  try { firstVisit = !localStorage.getItem("scstudio.welcomed"); } catch (e) { firstVisit = true; }
   if (!p) {
     try { p = await (await fetch("examples/blink.json")).json(); } catch (e) { p = blankProject(); }
-    firstVisit = true;
+
   }
   project = p;
   loadProject(p);

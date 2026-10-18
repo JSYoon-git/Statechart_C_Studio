@@ -331,11 +331,12 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
   #leftToggle { left: min(86vw, 320px); width: 26px; height: 56px; z-index: 16; font-size: 16px; }
   #left.collapsed + #leftResize + #leftToggle { left: 0; }
   #tools { left: 8px; top: 8px; max-width: calc(100% - 16px); }
-  #tools button { width: 38px; height: 36px; padding: 0; }
+  #tools { gap: 3px; padding: 4px; }
+  #tools button { width: 34px; height: 32px; padding: 0; }
   #status { left: 8px; max-width: calc(100% - 16px); }
   /* properties: a sheet at the bottom of the canvas instead of a 290 px card */
-  #right { left: 8px !important; right: 8px !important; top: auto; bottom: 8px; width: auto; max-height: 55%; }
-  #bottom { height: 40vh; }
+  #right { left: 8px !important; right: 8px !important; top: auto; bottom: 8px; width: auto; max-height: 46%; }
+  #bottom { height: 38vh; }
   .codebar { flex-wrap: wrap; }
   #emptyHint { top: 60%; width: calc(100% - 24px); max-width: none; }
 }
