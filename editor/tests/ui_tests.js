@@ -41,6 +41,7 @@ export async function run() {
 
   const langBefore = LANG; W.setLanguage("ko");     // the checks below look for the Korean messages
   W.loadProject(W.blankProject());
+  $("welcome").hidden = true; $("newMenu").hidden = true;      // first-visit welcome card / open New menu would cover the canvas
   W.setBottom(false);                         // start with the whole canvas visible
   view = { x: 0, y: 0, k: 1 }; W.applyView();
   const origAlert = W.alert, origConfirm = W.confirm, alerts = [];
@@ -465,6 +466,142 @@ export async function run() {
       if (probs().some((p) => p.startsWith("err"))) throw new Error(n + ": " + probs().filter((p) => p.startsWith("err")).join(", "));
     }
     return `${names.length}개`;
+  });
+
+  // ---------------------------------------------------------------- notes (comments on the drawing)
+  const noteLines = () => [...document.querySelectorAll("#world g.note text")].map((t) => t.textContent).join(" ");
+  const NT = () => W.notes();
+  await T("주석: 도구(N)로 만들면 입력칸에 커서, 한국어/영어 내용이 따로 저장되고 화면 언어를 따른다", async () => {
+    W.loadProject(W.blankProject()); view = { x: 0, y: 0, k: 1 }; W.applyView();
+    tool("state"); await drag(100, 100, 260, 160); typeInto($("pName"), "IDLE");
+    tool("note"); await drag(400, 100, 560, 170);
+    eq(Object.keys(NT()).length, 1, "notes");
+    eq(document.activeElement.id, "pNoteText", "text field focused");
+    const id = Object.keys(NT())[0];
+    W.setLanguage("ko"); W.refreshAll(); sel = { t: "note", id }; W.refreshProps();
+    typeInto($("pNoteText"), "한글 설명입니다");
+    eq(NT()[id].ko, "한글 설명입니다", "ko saved");
+    if (!noteLines().includes("한글")) throw new Error("ko text not drawn: " + noteLines());
+    W.setLanguage("en"); W.refreshAll();
+    if (!noteLines().includes("한글")) throw new Error("no English yet: should fall back to the Korean text");
+    sel = { t: "note", id }; W.refreshProps();
+    typeInto($("pNoteText"), "English text");
+    eq(NT()[id].text, "English text", "en saved");
+    eq(NT()[id].ko, "한글 설명입니다", "ko untouched");
+    if (noteLines().includes("한글") || !noteLines().includes("English")) throw new Error("not English: " + noteLines());
+    W.setLanguage("ko"); W.refreshAll();
+    if (!noteLines().includes("한글")) throw new Error("not Korean: " + noteLines());
+  });
+  await T("주석: 상태에 연결하면 점선, 연결한 상태를 지우면 연결만 풀린다", async () => {
+    const id = Object.keys(NT())[0], st = byName("IDLE");
+    sel = { t: "note", id }; W.refreshProps();
+    const pick = $("pNoteAttach"); pick.value = st.id; pick.dispatchEvent(new Event("change"));
+    eq(NT()[id].attach, st.id, "attach");
+    eq(document.querySelectorAll("#world line.noteline").length, 1, "dashed line");
+    sel = { t: "node", id: st.id }; W.deleteSelection();
+    eq(Object.keys(NT()).length, 1, "note stays");
+    eq(NT()[id].attach, null, "link removed");
+    W.undo();
+    eq(NT()[id].attach, st.id, "undo restores the link");
+  });
+  await T("주석: 끌어서 옮기고 크기를 바꾸고 Ctrl+Z로 되돌린다", async () => {
+    const id = Object.keys(NT())[0], n0 = { ...NT()[id] };
+    sel = null; W.refreshProps(); W.render();
+    const b = document.querySelector("#world g.note path.body").getBoundingClientRect();
+    const k = view.k;
+    pe("pointerdown", n0.x + 30, n0.y + 20); for (let i = 1; i <= 4; i++) pe("pointermove", n0.x + 30 + 20 * i, n0.y + 20 + 10 * i, svg); pe("pointerup", n0.x + 110, n0.y + 60, svg);
+    await sleep(100);
+    eq([NT()[id].x - n0.x, NT()[id].y - n0.y], [80, 40], "moved");
+    const hd = document.querySelector('#world rect[data-handle="nresize"]');
+    if (!hd) throw new Error("no resize handle on the selected note");
+    const hb = hd.getBoundingClientRect();
+    const r = svg.getBoundingClientRect(), hx = (hb.left + 5 - r.left - view.x) / k, hy = (hb.top + 5 - r.top - view.y) / k;
+    pe("pointerdown", hx, hy, hd); pe("pointermove", hx + 40, hy + 20, svg); pe("pointerup", hx + 40, hy + 20, svg);
+    await sleep(100);
+    eq(NT()[id].w - n0.w, 40, "resized");
+    W.undo(); eq(NT()[id].w, n0.w, "undo resize");
+    W.undo(); eq([NT()[id].x, NT()[id].y], [n0.x, n0.y], "undo move");
+    void b;
+  });
+  await T("주석: Delete로 지우고, 저장·불러오기·새로고침 저장에서 그대로 남는다", async () => {
+    const id = Object.keys(NT())[0];
+    const json = JSON.stringify(project);
+    W.loadProject(JSON.parse(json));
+    eq(Object.keys(NT()).length, 1, "after load");
+    eq(NT()[id].ko, "한글 설명입니다", "text kept");
+    eq(JSON.parse(localStorage.getItem("scstudio.project")).classes[0].chart.notes[id].text, "English text", "autosave");
+    sel = { t: "note", id }; W.refreshProps();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+    eq(Object.keys(NT()).length, 0, "deleted");
+    W.undo();
+    eq(Object.keys(NT()).length, 1, "restored");
+  });
+  await T("주석: 있어도 생성되는 C 코드는 한 글자도 같다 (코드에 안 들어감)", async () => {
+    const a = await W.api("/api/generate", JSON.parse(JSON.stringify(project)));
+    const q = JSON.parse(JSON.stringify(project)); for (const c of q.classes) if (c.chart) delete c.chart.notes;
+    const b = await W.api("/api/generate", q);
+    eq(a.files, b.files, "generated files");
+    for (const t of Object.values(NT())) for (const s of [t.text, t.ko]) if (s && JSON.stringify(a.files).includes(s)) throw new Error("note text leaked into the code");
+  });
+  await T("주석: 예제 9개 모두 영어·한국어 주석이 있고 화면 언어에 따라 바뀐다", async () => {
+    const names = [...document.querySelectorAll("#newMenu [data-new]")].map((b) => b.dataset.new).filter((x) => x !== "blank");
+    let total = 0;
+    for (const n of names) {
+      W.loadProject(await (await fetch(`examples/${n}.json`)).json());
+      for (let ci = 0; ci < project.classes.length; ci++) {
+        cur = ci; W.render();
+        const ns = Object.values(NT());
+        if (ci === 0 && !ns.length && project.classes.length === 1) throw new Error(n + ": no notes");
+        for (const t of ns) { if (!t.text || !t.ko) throw new Error(n + ": note needs both languages"); total++; }
+        W.setLanguage("en"); W.render(); const en = noteLines();
+        W.setLanguage("ko"); W.render(); const ko = noteLines();
+        if (ns.length && (en === ko || /[가-힣]/.test(en) || !/[가-힣]/.test(ko))) throw new Error(n + ": language switch did not change the notes");
+      }
+    }
+    return `${names.length}개 예제, 주석 ${total}개`;
+  });
+
+  // ---------------------------------------------------------------- Tidy and the way back
+  await T("정리 → [정리 전으로] 버튼이 나타나고, 누르면 이전 배치로 돌아간다 (다시 Ctrl+Y로 정리)", async () => {
+    W.loadProject(await (await fetch("examples/washer.json")).json());
+    const pos = () => JSON.stringify(Object.values(N()).map((n) => [n.id, n.x, n.y]));
+    const before = pos();
+    if (!$("untidy").hidden) throw new Error("button visible before Tidy");
+    // scramble a little so Tidy has something to do
+    for (const n of Object.values(N())) if (n.kind === "state" && !n.parent) { n.x += 37; n.y -= 21; }
+    W.snapshot(); W.save();
+    const scrambled = pos();
+    $("optimize").click();
+    if (pos() === scrambled) throw new Error("Tidy changed nothing");
+    if ($("untidy").hidden) throw new Error("no 'before Tidy' button after Tidy");
+    const tidied = pos();
+    $("untidy").click();
+    eq(pos(), scrambled, "layout before Tidy restored");
+    if (!$("untidy").hidden) throw new Error("button still visible after going back");
+    W.redo();
+    eq(pos(), tidied, "Ctrl+Y tidies again");
+    void before;
+  });
+  await T("정리 뒤 아무거나 고치면 [정리 전으로] 버튼이 사라진다 (다른 편집을 지우지 않도록)", async () => {
+    W.loadProject(await (await fetch("examples/washer.json")).json());
+    for (const n of Object.values(N())) if (n.kind === "state" && !n.parent) { n.x += 53; }
+    W.snapshot(); W.save();
+    $("optimize").click();
+    if ($("untidy").hidden) throw new Error("no button after Tidy");
+    W.snapshot(); Object.values(N()).find((n) => n.kind === "state").name += "X"; W.save();
+    if (!$("untidy").hidden) throw new Error("button should hide after another edit");
+  });
+
+  await T("주석: 연결한 상태를 끌면 주석도 같이 움직이고, 연결 안 한 주석은 그대로다", async () => {
+    W.loadProject(await (await fetch("examples/blink.json")).json()); view = { x: 0, y: 0, k: 1 }; W.applyView();
+    const off = byName("LED_OFF"), t1 = NT().t1, t2 = NT().t2;
+    const a = [off.x, off.y, t1.x, t1.y, t2.x, t2.y];
+    tool("select"); await drag(off.x + 85, off.y + 50, off.x + 85 + 60, off.y + 50 + 40);
+    eq([off.x - a[0], off.y - a[1]], [60, 40], "state moved");
+    eq([NT().t1.x - a[2], NT().t1.y - a[3]], [60, 40], "attached note followed");
+    eq([NT().t2.x - a[4], NT().t2.y - a[5]], [0, 0], "other note stayed");
+    W.undo();
+    eq([NT().t1.x, NT().t1.y], [a[2], a[3]], "undo brings the note back too");
   });
 
   W.alert = origAlert; W.confirm = origConfirm;

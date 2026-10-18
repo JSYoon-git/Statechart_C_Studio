@@ -186,6 +186,28 @@
       "action": "credit = 0;",
       "bend": 170
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 380,
+      "y": 60,
+      "w": 240,
+      "h": 80,
+      "text": "No events: coin is an input that carries a value. The reaction adds it on every call while coin > 0.",
+      "ko": "이벤트가 없습니다. coin은 값을 가진 입력입니다. coin > 0 인 동안 매 호출마다 reaction이 더합니다.",
+      "attach": "col"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 670,
+      "y": 400,
+      "w": 250,
+      "h": 80,
+      "text": "C is a condition connector: [credit >= price] goes on, [else] goes back to COLLECTING.",
+      "ko": "C는 조건 커넥터입니다. [credit >= price]면 진행하고, [else]면 COLLECTING으로 돌아갑니다.",
+      "attach": null
+     }
     }
    }
   }

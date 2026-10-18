@@ -149,6 +149,18 @@
       "action": "",
       "bend": 0
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 450,
+      "y": 225,
+      "w": 230,
+      "h": 90,
+      "text": "One counter, cnt, is shared by all three states. Every entry/ sets it to 0, and the target is a config value.",
+      "ko": "세 상태가 카운터 cnt 하나를 함께 씁니다. 상태에 들어올 때마다 entry/ 로 0으로 되돌리고, 목표값은 설정값입니다.",
+      "attach": "yellow"
+     }
     }
    }
   }

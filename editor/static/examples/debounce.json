@@ -174,6 +174,28 @@
       "action": "printf(\"떼짐 확정\\n\");",
       "bend": 0
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 620,
+      "y": 70,
+      "w": 250,
+      "h": 90,
+      "text": "Debounce: the raw level must stay the same for debounceTicks calls (2 x 10 ms = 20 ms) before it counts.",
+      "ko": "디바운스: raw 값이 debounceTicks번(2 x 10 ms = 20 ms) 연속 같아야 인정합니다.",
+      "attach": "dp"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 620,
+      "y": 250,
+      "w": 250,
+      "h": 80,
+      "text": "pressed (the output) changes only after the check, so a bounce shorter than 20 ms is ignored.",
+      "ko": "출력 pressed는 확인이 끝난 뒤에만 바뀝니다. 20 ms보다 짧은 튐은 무시됩니다.",
+      "attach": "pr"
+     }
     }
    }
   }

@@ -87,6 +87,11 @@ class Class:
         self.pseudo("init", sid, x, y, parent, region)
         self.edge(sid, to, action=action)
 
+    def note(self, nid, x, y, w, h, en, ko, attach=None):
+        """a comment on the drawing (never written into the C code): en / ko are shown by the language button"""
+        self.d["chart"].setdefault("notes", {})[nid] = {"id": nid, "x": x, "y": y, "w": w, "h": h,
+                                                        "text": en, "ko": ko, "attach": attach}
+
     def edge(self, a, b, guard="", action="", bend=0):
         self.e[f"e{len(self.e)}"] = {"from": a, "to": b, "trigger": "", "guard": guard, "action": action, "bend": bend}
 
@@ -105,6 +110,14 @@ def blink():
     c.init("i0", 70, 125, "off")
     c.edge("off", "on", guard="cnt >= blinkTicks", bend=22)
     c.edge("on", "off", guard="cnt >= blinkTicks", bend=22)
+    c.note("t1", 110, 215, 250, 80,
+           "cnt counts the 10 ms calls: entry/ cnt = 0; restarts it, the reaction cnt++ runs on every call. "
+           "At cnt >= blinkTicks (50 = 0.5 s) the transition fires.",
+           "cnt는 10 ms 호출 횟수입니다. entry/ cnt = 0; 으로 다시 세고, 매 호출마다 reaction cnt++ 가 실행됩니다. "
+           "cnt >= blinkTicks (50 = 0.5초)가 되면 전이합니다.", "off")
+    c.note("t2", 410, 215, 200, 80,
+           "blinkTicks is a config value: main.c passes it to Led_Init(). It is not a #define.",
+           "blinkTicks는 설정값입니다. main.c가 Led_Init()에 넘겨 줍니다. #define이 아닙니다.", "on")
     p.save("blink.json")
 
 
@@ -118,6 +131,12 @@ def button_lamp():
     c.edge("off", "on", guard="(button == true) && (forceOff == false)", action="pressCount++;", bend=22)
     c.edge("on", "off", guard="button == true", bend=22)
     c.edge("on", "off", guard="forceOff == true", bend=-50)
+    c.note("t1", 100, 235, 250, 70,
+           "A transition's action (pressCount++) runs BEFORE the entry action of the next state.",
+           "전이의 action(pressCount++)은 다음 상태의 entry action보다 먼저 실행됩니다.", "off")
+    c.note("t2", 400, 235, 230, 80,
+           "Two ways out of LAMP_ON. When both guards are true, the first one in priority order wins.",
+           "LAMP_ON에서 나가는 길이 둘입니다. 둘 다 참이면 우선순위가 앞선 것이 선택됩니다.", "on")
     p.save("button_lamp.json")
 
 
@@ -133,6 +152,9 @@ def traffic3():
     c.edge("red", "green", guard="cnt >= redTicks")             # 3 s
     c.edge("green", "yellow", guard="cnt >= greenTicks")        # 2.5 s
     c.edge("yellow", "red", guard="cnt >= yellowTicks")         # 1 s
+    c.note("t1", 450, 225, 230, 90,
+           "One counter, cnt, is shared by all three states. Every entry/ sets it to 0, and the target is a config value.",
+           "세 상태가 카운터 cnt 하나를 함께 씁니다. 상태에 들어올 때마다 entry/ 로 0으로 되돌리고, 목표값은 설정값입니다.", "yellow")
     p.save("traffic3.json")
 
 
@@ -157,6 +179,12 @@ def vending():
     c.edge("c1", "disp", guard="credit >= price", bend=-25)
     c.edge("c1", "col", guard="else", action='printf("금액이 부족합니다\\n");', bend=-40)
     c.edge("disp", "idle", guard="cnt >= dispenseTicks", action="credit = 0;", bend=170)
+    c.note("t1", 380, 60, 240, 80,
+           "No events: coin is an input that carries a value. The reaction adds it on every call while coin > 0.",
+           "이벤트가 없습니다. coin은 값을 가진 입력입니다. coin > 0 인 동안 매 호출마다 reaction이 더합니다.", "col")
+    c.note("t2", 670, 400, 250, 80,
+           "C is a condition connector: [credit >= price] goes on, [else] goes back to COLLECTING.",
+           "C는 조건 커넥터입니다. [credit >= price]면 진행하고, [else]면 COLLECTING으로 돌아갑니다.")
     p.save("vending.json")
 
 
@@ -187,6 +215,12 @@ def washer():
     c.edge("run", "paused", guard="pause == true", bend=20)
     c.edge("paused", "h", guard="resume == true", bend=20)          # back to where it was paused
     c.edge("done", "idle", guard="start == true")
+    c.note("t1", 740, 60, 240, 100,
+           "RUNNING has one reaction, cnt++, for every step inside it. Each step's entry/ sets cnt = 0 again.",
+           "RUNNING의 reaction cnt++ 하나가 안의 모든 단계를 셉니다. 각 단계는 entry/ 에서 cnt = 0 으로 다시 시작합니다.", "run")
+    c.note("t2", 560, 360, 250, 80,
+           "H is history: resume returns to the step that was running when pause was pressed.",
+           "H는 히스토리입니다. resume하면 pause를 누른 순간에 실행 중이던 단계로 돌아갑니다.", "paused")
     p.save("washer.json")
 
 
@@ -207,6 +241,12 @@ def debounce():
     c.edge("pr", "dr", guard="raw == false", bend=20)
     c.edge("dr", "pr", guard="raw == true", bend=20)
     c.edge("dr", "rel", guard="cnt >= debounceTicks", action='printf("떼짐 확정\\n");')
+    c.note("t1", 620, 70, 250, 90,
+           "Debounce: the raw level must stay the same for debounceTicks calls (2 x 10 ms = 20 ms) before it counts.",
+           "디바운스: raw 값이 debounceTicks번(2 x 10 ms = 20 ms) 연속 같아야 인정합니다.", "dp")
+    c.note("t2", 620, 250, 250, 80,
+           "pressed (the output) changes only after the check, so a bounce shorter than 20 ms is ignored.",
+           "출력 pressed는 확인이 끝난 뒤에만 바뀝니다. 20 ms보다 짧은 튐은 무시됩니다.", "pr")
     p.save("debounce.json")
 
 
@@ -230,6 +270,11 @@ def motor():
     ctl.edge("st", "flt", guard="cnt >= startTimeoutTicks")  # 3 s without reaching speed
     ctl.edge("run", "idle", guard="stopCmd == true", bend=110)
     ctl.edge("flt", "idle", guard="stopCmd == true")
+    ctl.note("t1", 40, 300, 330, 100,
+             "Two modules: main.c copies Controller's outputs (runCmd, targetRpm) to Motor's inputs every 10 ms, "
+             "and Motor.atSpeed back to Controller.",
+             "모듈이 둘입니다. main.c가 10 ms마다 Controller의 출력(runCmd, targetRpm)을 Motor의 입력으로, "
+             "Motor.atSpeed를 Controller로 복사해 줍니다.", "idle")
 
     m = p.cls("Motor", [inp("run", link="Controller.runCmd"), inp("target", "uint16_t", "0", link="Controller.targetRpm"),
                         inp("jam"), out("atSpeed"), out("rpm", "uint16_t", "0"),
@@ -248,6 +293,9 @@ def motor():
     m.edge("stop", "on", guard="run == true")
     m.edge("ramp", "at", guard="(cnt >= rampTicks) && (jam == false) && (rpm + rpmStep >= target)", action="rpm = target;")
     m.edge("on", "stop", guard="run == false", bend=40)
+    m.note("t1", 60, 230, 200, 100,
+           "ON is a composite state: RAMPING and AT_SPEED are inside it, so run == false leaves from either one.",
+           "ON은 복합 상태입니다. RAMPING과 AT_SPEED가 안에 있어서, run == false면 어느 쪽에서든 나갑니다.", "stop")
     p.save("motor.json")
 
 
@@ -273,6 +321,12 @@ def modem():
     c.edge("j", "x", guard="else", action='printf("3번 실패 - 포기합니다\\n");')
     c.edge("wait", "dial", guard="cnt >= retryDelayTicks", bend=-30)
     c.edge("on", "dial", guard="hangup == true", action='printf("끊김 - 다시 연결\\n");', bend=50)
+    c.note("t1", 700, 90, 250, 90,
+           "The reaction in ONLINE reads the data input directly: data > 0 adds to bytes. There is no event queue.",
+           "ONLINE의 reaction이 입력 data를 바로 읽습니다. data > 0 이면 bytes에 더합니다. 이벤트 큐가 없습니다.", "on")
+    c.note("t2", 700, 330, 250, 90,
+           "J merges the two failures. Below maxRetries try again, otherwise [else] ends the machine at the ⊗ connector.",
+           "J가 두 가지 실패를 하나로 모읍니다. maxRetries 미만이면 다시 시도하고, 아니면 [else]로 ⊗ 커넥터에서 끝납니다.")
     p.save("modem.json")
 
 
@@ -316,6 +370,14 @@ def trafficlight():
     c.init("i0", 30, 40, "op")
     c.edge("op", "flt", guard="fault == true", bend=25)
     c.edge("flt", "hop", guard="reset == true", bend=-120)      # back into 'operating' via history
+    c.note("t1", 60, 505, 340, 90,
+           "operating has two reactions of its own: cnt++ and setGreen. After a fault, reset goes through H (history) "
+           "back to the light that was on.",
+           "operating에는 자체 reaction이 둘 있습니다: cnt++ 와 setGreen. 고장이 나면 reset이 H(히스토리)를 거쳐 "
+           "꺼지기 전의 신호로 돌아갑니다.", "op")
+    c.note("t2", 740, 505, 330, 90,
+           "fault is an AND state: the blink and alarm regions run at the same time, each with its own states.",
+           "fault는 AND 상태입니다. blink와 alarm 영역이 동시에 동작하고, 각자 자기 상태를 가집니다.", "flt")
     p.save("trafficlight.json")
 
 

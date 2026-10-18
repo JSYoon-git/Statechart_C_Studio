@@ -179,6 +179,18 @@
       "action": "",
       "bend": 0
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 40,
+      "y": 300,
+      "w": 330,
+      "h": 100,
+      "text": "Two modules: main.c copies Controller's outputs (runCmd, targetRpm) to Motor's inputs every 10 ms, and Motor.atSpeed back to Controller.",
+      "ko": "모듈이 둘입니다. main.c가 10 ms마다 Controller의 출력(runCmd, targetRpm)을 Motor의 입력으로, Motor.atSpeed를 Controller로 복사해 줍니다.",
+      "attach": "idle"
+     }
     }
    },
    "ioStyle": "struct"
@@ -363,6 +375,18 @@
       "guard": "run == false",
       "action": "",
       "bend": 40
+     }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 60,
+      "y": 230,
+      "w": 200,
+      "h": 100,
+      "text": "ON is a composite state: RAMPING and AT_SPEED are inside it, so run == false leaves from either one.",
+      "ko": "ON은 복합 상태입니다. RAMPING과 AT_SPEED가 안에 있어서, run == false면 어느 쪽에서든 나갑니다.",
+      "attach": "stop"
      }
     }
    },

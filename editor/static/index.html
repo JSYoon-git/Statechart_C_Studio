@@ -68,6 +68,7 @@
     <div id="tools">
       <button data-tool="select" title="Select / move (V)">&#x2196;</button>
       <button data-tool="state" title="State (S) — drag to size it">&#x25AD;</button>
+      <button data-tool="note" title="Note (N): a comment on the drawing — drag to size it, then type">&#x270E;</button>
       <button data-tool="trans" title="Transition (T) — drag from source to target">&#x2192;</button>
       <button data-tool="init" title="Default transition (D) — drag inside a container to its target">&#x25CF;&#x2192;</button>
       <button data-tool="cond" title="Condition connector (C): if / else branching">C</button>
@@ -77,6 +78,7 @@
       <span class="tsep"></span>
       <button id="zoomFit" title="Fit to screen (F)">&#x2922;</button>
       <button id="optimize" class="optbtn" data-i18n title="Optimize the layout: states in flow order, transitions curve around other states. Ctrl+Z to undo">✨ Tidy</button>
+      <button id="untidy" class="optbtn" hidden title="Do not like the result? Go back to the layout you had before Tidy">↶ Before Tidy</button>
     </div>
     <svg id="canvas" tabindex="0">
       <defs>

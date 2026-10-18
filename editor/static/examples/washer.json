@@ -288,6 +288,28 @@
       "action": "",
       "bend": 0
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 740,
+      "y": 60,
+      "w": 240,
+      "h": 100,
+      "text": "RUNNING has one reaction, cnt++, for every step inside it. Each step's entry/ sets cnt = 0 again.",
+      "ko": "RUNNING의 reaction cnt++ 하나가 안의 모든 단계를 셉니다. 각 단계는 entry/ 에서 cnt = 0 으로 다시 시작합니다.",
+      "attach": "run"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 560,
+      "y": 360,
+      "w": 250,
+      "h": 80,
+      "text": "H is history: resume returns to the step that was running when pause was pressed.",
+      "ko": "H는 히스토리입니다. resume하면 pause를 누른 순간에 실행 중이던 단계로 돌아갑니다.",
+      "attach": "paused"
+     }
     }
    },
    "ioStyle": "struct"

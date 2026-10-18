@@ -370,3 +370,18 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
 #bNew.pulse { animation: newpulse 1.6s ease-in-out infinite; }
 @keyframes newpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .55); } 50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); } }
 @media (prefers-reduced-motion: reduce) { #bNew.pulse { animation: none; border-color: var(--accent); } }
+
+/* notes: comments on the drawing */
+.note .body { fill: #eaf2ff; stroke: #6b8fd6; stroke-width: 1.2; }
+.note .fold { fill: #cfe0ff; stroke: #6b8fd6; stroke-width: 1.2; }
+.note text { font-size: 12px; fill: #1e3a6b; font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif; pointer-events: none; }
+.note text.ph { fill: #8aa0c8; font-style: italic; }
+.note.sel .body { stroke: var(--sel); stroke-width: 2.4; }
+.note { cursor: move; }
+.noteline { stroke: #6b8fd6; stroke-width: 1.2; stroke-dasharray: 4 3; pointer-events: none; }
+button.danger { color: var(--err); }
+#tools button[data-tool="note"] { color: #3b6bc4; }
+
+/* Tidy: the button that brings the previous layout back (shown only while the drawing is exactly as Tidy left it) */
+#tools button#untidy { background: #fff7ed; border-color: #f59e0b; color: #9a3412; }
+#untidy[hidden] { display: none; }

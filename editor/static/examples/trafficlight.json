@@ -442,6 +442,28 @@
       "action": "",
       "bend": -120
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 60,
+      "y": 505,
+      "w": 340,
+      "h": 90,
+      "text": "operating has two reactions of its own: cnt++ and setGreen. After a fault, reset goes through H (history) back to the light that was on.",
+      "ko": "operating에는 자체 reaction이 둘 있습니다: cnt++ 와 setGreen. 고장이 나면 reset이 H(히스토리)를 거쳐 꺼지기 전의 신호로 돌아갑니다.",
+      "attach": "op"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 740,
+      "y": 505,
+      "w": 330,
+      "h": 90,
+      "text": "fault is an AND state: the blink and alarm regions run at the same time, each with its own states.",
+      "ko": "fault는 AND 상태입니다. blink와 alarm 영역이 동시에 동작하고, 각자 자기 상태를 가집니다.",
+      "attach": "flt"
+     }
     }
    },
    "ioStyle": "struct"

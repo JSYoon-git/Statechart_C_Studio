@@ -110,6 +110,28 @@
       "action": "",
       "bend": 22
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 110,
+      "y": 215,
+      "w": 250,
+      "h": 80,
+      "text": "cnt counts the 10 ms calls: entry/ cnt = 0; restarts it, the reaction cnt++ runs on every call. At cnt >= blinkTicks (50 = 0.5 s) the transition fires.",
+      "ko": "cnt는 10 ms 호출 횟수입니다. entry/ cnt = 0; 으로 다시 세고, 매 호출마다 reaction cnt++ 가 실행됩니다. cnt >= blinkTicks (50 = 0.5초)가 되면 전이합니다.",
+      "attach": "off"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 410,
+      "y": 215,
+      "w": 200,
+      "h": 80,
+      "text": "blinkTicks is a config value: main.c passes it to Led_Init(). It is not a #define.",
+      "ko": "blinkTicks는 설정값입니다. main.c가 Led_Init()에 넘겨 줍니다. #define이 아닙니다.",
+      "attach": "on"
+     }
     }
    }
   }

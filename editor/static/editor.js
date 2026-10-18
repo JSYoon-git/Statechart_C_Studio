@@ -25,6 +25,30 @@ function chart() {
   return c.chart;
 }
 function nodes() { return chart().nodes; }
+/* notes: comments on the drawing for the people who read it. They live beside nodes / edges (chart.notes) and are
+   never written into the C code. A note may be attached to a state (dashed line). */
+function notes() { return chart().notes || {}; }
+function notesW() { const c = chart(); return c.notes || (c.notes = {}); }
+const noteKey = (n) => (LANG === "ko" ? "ko" : "text");               // one text per language: text = English, ko = 한국어
+const noteText = (n) => n[noteKey(n)] || n[LANG === "ko" ? "text" : "ko"] || "";     // the other language when this one is empty
+function wrapNote(text, w) {
+  const maxW = Math.max(30, w - 22), lines = [];
+  for (const para of String(text).split("\n")) {
+    const wid = (ch) => (ch.charCodeAt(0) > 0x2e7f ? 12 : 6.4);
+    let cur = "", cw = 0;
+    for (const ch of para) {
+      if (cw + wid(ch) > maxW && cur) {
+        const k = ch !== " " && ch.charCodeAt(0) <= 0x2e7f ? cur.lastIndexOf(" ") : -1;     // Latin: break at the last space
+        if (k > 0) { lines.push(cur.slice(0, k)); cur = cur.slice(k + 1); } else { lines.push(cur); cur = ""; }
+        cw = [...cur].reduce((a, c) => a + wid(c), 0);
+      }
+      if (ch === " " && !cur) continue;
+      cur += ch; cw += wid(ch);
+    }
+    lines.push(cur);
+  }
+  return lines;
+}
 function edges() { return chart().edges; }
 
 function blankProject() {
@@ -69,7 +93,9 @@ function paintButtons() {
   const set = (el, st) => { el.classList.remove("busy", "ok", "warn", "fail"); if (st) el.classList.add(st); };
   set($("bGen"), genBusy ? "busy" : genSig === sig ? "ok" : "");
   set($("bCompile"), buildBusy ? "busy" : buildSig === sig ? buildState : "");
+  $("untidy").hidden = !(tidySig && tidySig === sig);          // only while nothing was changed after Tidy
 }
+let tidySig = null;
 
 // ------------------------------------------------------------------ geometry helpers
 function isState(n) { return n && n.kind === "state"; }
@@ -190,6 +216,25 @@ function render() {
   const ns = Object.values(nodes());
   const states = ns.filter(isState).sort((a, b) => depth(a) - depth(b));
   const gS = el("g", {}, world), gE = el("g", {}, world), gP = el("g", {}, world), gH = el("g", {}, world);
+  const gN = el("g", { class: "notes" }, null);
+  world.insertBefore(gN, gH);                       // above states and transitions, below the handles
+  for (const n of Object.values(notes())) {
+    const isSel = sel && sel.t === "note" && sel.id === n.id;
+    const lines = wrapNote(noteText(n), n.w);
+    const h = Math.max(n.h, lines.length * 15 + 16);          // the text is never cut off
+    const a = nodes()[n.attach];
+    if (a && isState(a)) {
+      const nc = { x: n.x + n.w / 2, y: n.y + h / 2 };
+      const p1 = boundary({ kind: "state", x: n.x, y: n.y, w: n.w, h }, center(a)), p2 = boundary(a, nc);
+      el("line", { class: "noteline", x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y }, gN);
+    }
+    const g = el("g", { class: "note" + (isSel ? " sel" : ""), "data-note": n.id }, gN);
+    el("path", { class: "body", d: `M${n.x} ${n.y} H${n.x + n.w - 14} L${n.x + n.w} ${n.y + 14} V${n.y + h} H${n.x} Z` }, g);
+    el("path", { class: "fold", d: `M${n.x + n.w - 14} ${n.y} V${n.y + 14} H${n.x + n.w}` }, g);
+    lines.forEach((s, i) => { const t = el("text", { x: n.x + 9, y: n.y + 17 + i * 15 }, g); t.textContent = s; });
+    if (!noteText(n).trim()) { const t = el("text", { class: "ph", x: n.x + 9, y: n.y + 17 }, g); t.textContent = _t("(empty note)"); }
+    if (isSel) el("rect", { class: "handle", x: n.x + n.w - 5, y: n.y + h - 5, width: 10, height: 10, "data-handle": "nresize", "data-note": n.id }, gH);
+  }
 
   for (const n of states) {
     const isSel = sel && sel.t === "node" && sel.id === n.id;
@@ -367,6 +412,7 @@ function setTool(t) {
   const help = {
     select: _t("Select / move. Drag empty space = pan, wheel = zoom, double-click = rename, Del = delete"),
     state: _t("Drag on empty space or inside a state to make a state (inside = substate)"),
+    note: _t("Note: drag to size it, then type. Notes are comments for readers; they are not written into the C code"),
     trans: _t("Drag from a source state / connector to the target (drop on the same state = self transition)"),
     init: _t("Default transition: start inside a container (or on empty top level) and drag to the target state"),
     cond: _t("Click where the condition connector goes"), junction: _t("Click where the junction goes"),
@@ -398,9 +444,23 @@ svg.addEventListener("pointerdown", (ev) => {
       drag = { kind: "resize", n, ox: p.x, oy: p.y, w: n.w, h: n.h };
       return;
     }
+    if (handle === "nresize") {
+      const n = notes()[tgt.dataset.note];
+      snapshot();
+      drag = { kind: "nresize", n, ox: p.x, oy: p.y, w: n.w, h: n.h };
+      return;
+    }
     if (handle === "bend") {
       snapshot();
       drag = { kind: "bend", e: edges()[edgeId] };
+      return;
+    }
+    const noteEl = tgt.closest ? tgt.closest("[data-note]") : null;
+    if (noteEl && notes()[noteEl.dataset.note]) {
+      const n = notes()[noteEl.dataset.note];
+      sel = { t: "note", id: n.id };
+      drag = { kind: "nmove", n, start: p, ox: n.x, oy: n.y, moved: false };
+      refreshProps(); render();
       return;
     }
     if (edgeId) { sel = { t: "edge", id: edgeId }; refreshProps(); render(); return; }
@@ -409,14 +469,15 @@ svg.addEventListener("pointerdown", (ev) => {
       sel = { t: "node", id };
       const n = nodes()[id];
       const moving = [n, ...(isState(n) ? descendants(id) : [])];
-      drag = { kind: "move", n, start: p, orig: moving.map((m) => ({ m, x: m.x, y: m.y })), moved: false };
+      const stuck = Object.values(notes()).filter((t) => moving.some((m) => m.id === t.attach));      // notes attached to them follow
+      drag = { kind: "move", n, start: p, orig: [...moving, ...stuck].map((m) => ({ m, x: m.x, y: m.y })), moved: false };
       refreshProps(); render();
       return;
     }
     sel = null; refreshProps(); render();
     return;
   }
-  if (tool === "state") { ghost = { x1: p.x, y1: p.y, x2: p.x, y2: p.y }; drag = { kind: "ghost" }; return; }
+  if (tool === "state" || tool === "note") { ghost = { x1: p.x, y1: p.y, x2: p.x, y2: p.y }; drag = { kind: "ghost" }; return; }
   if (tool === "trans") {
     const n = nodeAtPoint(p);
     if (!n || n.kind === "init") { flash(_t("Start on a source state or connector")); return; }
@@ -461,6 +522,19 @@ svg.addEventListener("pointermove", (ev) => {
     dropTarget = t ? t.id : null;
     render(); return;
   }
+  if (drag.kind === "nmove") {
+    let dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 3) return;
+    if (!drag.moved) { snapshot(); drag.moved = true; }
+    if (!ev.altKey) { dx = Math.round(dx / 5) * 5; dy = Math.round(dy / 5) * 5; }
+    drag.n.x = drag.ox + dx; drag.n.y = drag.oy + dy;
+    render(); return;
+  }
+  if (drag.kind === "nresize") {
+    drag.n.w = Math.max(70, Math.round((drag.w + p.x - drag.ox) / 5) * 5);
+    drag.n.h = Math.max(36, Math.round((drag.h + p.y - drag.oy) / 5) * 5);
+    render(); return;
+  }
   if (drag.kind === "resize") {
     drag.n.w = Math.max(60, Math.round((drag.w + p.x - drag.ox) / 5) * 5);
     drag.n.h = Math.max(36, Math.round((drag.h + p.y - drag.oy) / 5) * 5);
@@ -502,7 +576,20 @@ svg.addEventListener("pointerup", (ev) => {
     // pseudo children of moved states keep their container; states inside keep theirs
     save(); refreshAll(); return;
   }
-  if (d.kind === "resize" || d.kind === "bend") { save(); refreshAll(); return; }
+  if (d.kind === "resize" || d.kind === "bend" || d.kind === "nresize" || (d.kind === "nmove" && d.moved)) { save(); refreshAll(); return; }
+  if (d.kind === "ghost" && tool === "note") {
+    const g = ghost; ghost = null;
+    let x = Math.min(g.x1, g.x2), y = Math.min(g.y1, g.y2), w = Math.abs(g.x2 - g.x1), h = Math.abs(g.y2 - g.y1);
+    if (w < 40 || h < 30) { w = 170; h = 70; x = g.x1 - 10; y = g.y1 - 10; }
+    snapshot();
+    const n = { id: uid("t"), x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), text: "", attach: null };
+    notesW()[n.id] = n;
+    sel = { t: "note", id: n.id };
+    if (!ev.shiftKey) setTool("select");
+    refreshAll();
+    focusProp("pNoteText");
+    return;
+  }
   if (d.kind === "ghost") {
     const g = ghost; ghost = null;
     let x = Math.min(g.x1, g.x2), y = Math.min(g.y1, g.y2), w = Math.abs(g.x2 - g.x1), h = Math.abs(g.y2 - g.y1);
@@ -585,6 +672,8 @@ svg.addEventListener("pointerup", (ev) => {
 })();
 
 svg.addEventListener("dblclick", (ev) => {
+  const noteEl = ev.target.closest ? ev.target.closest("[data-note]") : null;
+  if (noteEl && notes()[noteEl.dataset.note]) { sel = { t: "note", id: noteEl.dataset.note }; refreshProps(); render(); focusProp("pNoteText"); return; }
   const id = hitNodeId(ev.target);
   const n = id && nodes()[id];
   if (n && isState(n)) {
@@ -604,7 +693,7 @@ svg.addEventListener("wheel", (ev) => {
 }, { passive: false });
 
 function zoomFit() {
-  const ns = Object.values(nodes());
+  const ns = [...Object.values(nodes()), ...Object.values(notes())];
   if (!ns.length) { view = { x: 80, y: 40, k: 1 }; applyView(); return; }
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const n of ns) {
@@ -621,11 +710,13 @@ function zoomFit() {
 function deleteSelection() {
   if (!sel) return;
   snapshot();
-  if (sel.t === "edge") delete edges()[sel.id];
+  if (sel.t === "note") delete notes()[sel.id];
+  else if (sel.t === "edge") delete edges()[sel.id];
   else {
     const n = nodes()[sel.id];
     const gone = new Set([sel.id, ...(n && isState(n) ? descendants(sel.id).map((d) => d.id) : [])]);
     for (const id of gone) delete nodes()[id];
+    for (const t of Object.values(notes())) if (gone.has(t.attach)) t.attach = null;
     for (const e of Object.values(edges())) if (gone.has(e.from) || gone.has(e.to)) delete edges()[e.id];
     // init dots whose only edge vanished
     for (const x of Object.values(nodes()))
@@ -644,7 +735,7 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === " ") { spaceDown = true; svg.style.cursor = "grab"; ev.preventDefault(); return; }
   if (ev.key === "Delete" || ev.key === "Backspace") { deleteSelection(); ev.preventDefault(); return; }
   if (ev.key === "Escape") { setTool("select"); rubber = ghost = null; drag = null; sel = null; refreshProps(); render(); return; }
-  const map = { v: "select", s: "state", t: "trans", d: "init", c: "cond", j: "junction", h: "hist", x: "term" };
+  const map = { v: "select", s: "state", t: "trans", d: "init", c: "cond", j: "junction", h: "hist", x: "term", n: "note" };
   if (map[ev.key.toLowerCase()] && !ev.ctrlKey) setTool(map[ev.key.toLowerCase()]);
   if (ev.key.toLowerCase() === "f") zoomFit();
 });
@@ -765,6 +856,7 @@ function refreshProps() {
   P.textContent = "";
   if (sel && sel.t === "node" && !nodes()[sel.id]) sel = null;
   if (sel && sel.t === "edge" && !edges()[sel.id]) sel = null;
+  if (sel && sel.t === "note" && !notes()[sel.id]) sel = null;
   $("right").hidden = !sel;        // floats over the canvas: opening/closing never moves the drawing
   const key = sel ? sel.t + ":" + sel.id : "";
   if (sel && key !== lastPropsKey && isPhone()) setBottom(false);      // phone: picking something gives the room to its properties
@@ -774,6 +866,7 @@ function refreshProps() {
   requestAnimationFrame(followCode);
   if (sel.t === "class") return classProps(P);
   if (sel.t === "edge") return edgeProps(P, edges()[sel.id]);
+  if (sel.t === "note") return noteProps(P, notes()[sel.id]);
   const n = nodes()[sel.id];
   if (isState(n)) return stateProps(P, n);
   return pseudoProps(P, n);
@@ -786,7 +879,7 @@ function placeCard() {
   const cv = $("center").getBoundingClientRect(), main = $("main").getBoundingClientRect();
   let onLeft = false;
   if (sel && sel.t !== "class") {
-    const el = world.querySelector(sel.t === "edge" ? `[data-edge="${sel.id}"]` : `g[data-id="${sel.id}"]`);
+    const el = world.querySelector(sel.t === "edge" ? `[data-edge="${sel.id}"]` : sel.t === "note" ? `[data-note="${sel.id}"]` : `g[data-id="${sel.id}"]`);
     if (el) {
       const b = el.getBoundingClientRect();
       onLeft = (b.left + b.right) / 2 > cv.left + cv.width / 2;
@@ -803,6 +896,20 @@ function keepCanvasStill() {
   lastCanvasLeft = r.left;
 }
 
+
+function noteProps(P, n) {
+  P.append(h("h2", {}, _t("Note")));
+  P.append(h("label", {}, _t("Text")), bound(n, noteKey(n), { id: "pNoteText", area: true, rows: 5, ph: noteText(n) !== (n[noteKey(n)] || "") ? noteText(n) : "" }));
+  P.append(h("div", { class: "hint" }, _t("Shown in the current language. Switch the language button (English / 한국어) to write the other text.")));
+  P.append(h("label", {}, _t("Attached to")));
+  const pick = h("select", { id: "pNoteAttach" }, h("option", { value: "" }, _t("(nothing: free note)")));
+  for (const s of Object.values(nodes()).filter(isState)) pick.append(h("option", { value: s.id }, s.name));
+  pick.value = n.attach && nodes()[n.attach] ? n.attach : "";
+  pick.addEventListener("change", () => { snapshot(); n.attach = pick.value || null; save(); render(); });
+  P.append(pick);
+  P.append(h("div", { class: "hint" }, _t("A note is for the people who read the drawing. It is not written into the C code.")));
+  P.append(h("button", { class: "danger", on: { click: deleteSelection } }, _t("Delete note")));
+}
 
 function stateProps(P, n) {
   const parent = nodes()[n.parent];
@@ -1469,7 +1576,7 @@ function edgeTraceLabel(e) {
 }
 /* lines [start, end] of `file` that came from the current selection */
 function locateSelection(gen) {
-  if (!sel || sel.t === "class") return null;
+  if (!sel || sel.t === "class" || sel.t === "note") return null;
   const file = cls().name + ".c", src = gen.files[file];
   if (!src) return null;
   const L = src.split("\n");
@@ -1545,7 +1652,7 @@ function locateSelection(gen) {
 let followBusy = false;
 async function followCode() {
   if (followBusy || !lastGen || $("bottom").classList.contains("closed") || !$("tab-code").classList.contains("on")) return;
-  if (!sel || sel.t === "class") return;
+  if (!sel || sel.t === "class" || sel.t === "note") return;
   followBusy = true;
   try {
     if (lastGen.version !== editVersion) {          // the drawing changed: regenerate quietly
@@ -1666,6 +1773,7 @@ function loadProject(p) {
     c.chart = c.chart || { nodes: {}, edges: {} };
     for (const [id, n] of Object.entries(c.chart.nodes)) n.id = id;
     for (const [id, e] of Object.entries(c.chart.edges)) e.id = id;
+    for (const [id, t] of Object.entries(c.chart.notes || {})) t.id = id;
     migrateClass(c);                   // old projects: event triggers -> inputs, tm() -> counters
   }
   delete project.periodUs; delete project.utTest;
@@ -1706,12 +1814,25 @@ $("propsClose").addEventListener("click", () => { sel = null; refreshProps(); re
 $("optimize").addEventListener("click", () => {
   if (!Object.values(nodes()).some(isState)) return flash(_t("No states to tidy"));
   snapshot();
+  const was = Object.fromEntries(Object.values(nodes()).map((n) => [n.id, { x: n.x, y: n.y }]));
   const r = window.optimizeLayout(nodes(), edges());
   if (!r.changed) { undoStack.pop(); return flash(_t("The current layout is already tidier — nothing changed"), true); }
+  for (const t of Object.values(notes())) {                     // a note stays at the same place beside its state
+    const a = was[t.attach], b = nodes()[t.attach];
+    if (a && b) { t.x += b.x - a.x; t.y += b.y - a.y; }
+  }
   save(); render(); zoomFit();
+  tidySig = JSON.stringify(project); paintButtons();
   const b = r.before, a = r.after;
   flash(_t("Tidied — lines through states {0}→{1}, crossings {2}→{3}, label overlaps {4}→{5} (Ctrl+Z to undo)",
           b.through, a.through, b.crossings, a.crossings, b.labelHits, a.labelHits), true);
+});
+$("untidy").addEventListener("click", () => {
+  if (!tidySig || tidySig !== JSON.stringify(project)) return;
+  tidySig = null;
+  undo();                                  // the snapshot Tidy took is the layout before it
+  zoomFit();
+  flash(_t("Back to the layout before Tidy (Ctrl+Y to tidy again)"), true);
 });
 
 // ------------------------------------------------------------------ boot

@@ -225,6 +225,28 @@
       "action": "printf(\"끊김 - 다시 연결\\n\");",
       "bend": 50
      }
+    },
+    "notes": {
+     "t1": {
+      "id": "t1",
+      "x": 700,
+      "y": 90,
+      "w": 250,
+      "h": 90,
+      "text": "The reaction in ONLINE reads the data input directly: data > 0 adds to bytes. There is no event queue.",
+      "ko": "ONLINE의 reaction이 입력 data를 바로 읽습니다. data > 0 이면 bytes에 더합니다. 이벤트 큐가 없습니다.",
+      "attach": "on"
+     },
+     "t2": {
+      "id": "t2",
+      "x": 700,
+      "y": 330,
+      "w": 250,
+      "h": 90,
+      "text": "J merges the two failures. Below maxRetries try again, otherwise [else] ends the machine at the ⊗ connector.",
+      "ko": "J가 두 가지 실패를 하나로 모읍니다. maxRetries 미만이면 다시 시도하고, 아니면 [else]로 ⊗ 커넥터에서 끝납니다.",
+      "attach": null
+     }
     }
    },
    "ioStyle": "struct"
