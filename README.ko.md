@@ -100,6 +100,12 @@ python editor/server.py
 
 그리고 http://127.0.0.1:8770/ 을 엽니다. 자세한 내용은 [editor/README.md](editor/README.md)에 있습니다.
 
+## 라이선스
+
+[MIT](LICENSE) © JSYoon-git. 수업에서든 업무에서든 자유롭게 쓰고, 복사하고, 고칠 수 있습니다. 저작권 표시만 남겨 주세요.
+`editor/static/vendor/clang/` 아래의 컴파일러와 라이브러리는 다른 프로젝트의 것이라 각자의 라이선스를 따릅니다.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 보세요. 이 프로젝트는 독립적이며 어떤 도구 제작사와도 관련이 없습니다.
+
 ## 테스트
 
 ```bash

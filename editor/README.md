@@ -33,7 +33,7 @@ int main(void) {
 - `X_Main` 한 번(= `X_takeTrigger`)은 **① 활성 상태들의 내부 반응을 바깥→안 순서로 모두 실행 → ② 전이를 최대 1개**(AND 상태는 영역마다 1개) 실행합니다. 내부 반응이 먼저라서 위 카운터는 정확히 50번째 호출에 넘어갑니다.
 
 ```bash
-python rhapsody_viewer/editor/server.py
+python editor/server.py
 ```
 
 브라우저에서 http://127.0.0.1:8770/ 을 엽니다. 화면은 영어가 기본이고, 상단의 **한국어 / English** 버튼으로 바꿉니다(선택은 기억됨). (`.claude/launch.json`의 `statechart-editor` 구성과 같습니다.)
@@ -120,9 +120,9 @@ Oven_show(me, "x");                  /* 오퍼레이션 */
 ## 테스트
 
 ```bash
-python rhapsody_viewer/editor/tests/test_codegen.py      # 9개 예제 생성 + /W4 빌드, define 없음, 설정값(X_Init 인자), 우선순위·반응 순서·옛 프로젝트 변환 (57 checks, C89 검사 포함)
-python rhapsody_viewer/editor/tests/test_edge_cases.py   # 이름·입출력·옛 프로젝트 변환 엣지 케이스 45개
-python rhapsody_viewer/editor/tests/qa_metrics.py        # /W4 /WX (x86·x64), /analyze, 코드 크기, RAM, 호출 시간
+python editor/tests/test_codegen.py      # 9개 예제 생성 + /W4 빌드, define 없음, 설정값(X_Init 인자), 우선순위·반응 순서·옛 프로젝트 변환 (57 checks, C89 검사 포함)
+python editor/tests/test_edge_cases.py   # 이름·입출력·옛 프로젝트 변환 엣지 케이스 45개
+python editor/tests/qa_metrics.py        # /W4 /WX (x86·x64), /analyze, 코드 크기, RAM, 호출 시간
 ```
 
 UI 테스트(`tests/ui_tests.js`)는 `static/_tests/`에 복사한 뒤 페이지에서 `await (await import('/_tests/ui_tests.js')).run()`.

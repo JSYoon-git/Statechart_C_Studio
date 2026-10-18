@@ -27,7 +27,7 @@ Rules (the user's design):
 import os
 import re
 
-from rhp_c import ClassGen, composite, ctype_kind, ind, is_region, user_code
+from chart_gen import ClassGen, composite, ctype_kind, ind, is_region, user_code
 from sc_ir import State
 
 BANNER = """/*********************************************************************

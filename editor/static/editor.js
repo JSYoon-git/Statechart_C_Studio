@@ -1,4 +1,4 @@
-/* Statechart Studio - draw statecharts, generate Rhapsody-style C, simulate. */
+/* Statechart Studio - draw statecharts, generate task-style C. */
 "use strict";
 
 const SVGNS = "http://www.w3.org/2000/svg";

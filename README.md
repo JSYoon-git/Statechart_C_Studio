@@ -102,6 +102,13 @@ python editor/server.py
 
 then open http://127.0.0.1:8770/. More details are in [editor/README.md](editor/README.md) (Korean).
 
+## License
+
+[MIT](LICENSE) © JSYoon-git. You may use, copy and change it, in class or at work. Please keep the copyright line.
+The compiler and libraries under `editor/static/vendor/clang/` come from other projects and keep their own
+licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This project is independent and is not affiliated
+with any tool vendor.
+
 ## Tests
 
 ```bash

@@ -2,7 +2,7 @@
    wasm clang does the Build. Used by editor.js api() when there is no /api server. */
 "use strict";
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
-const PY_FILES = ["sc_ir.py", "rhp_c.py", "task_c.py", "model.py"];
+const PY_FILES = ["sc_ir.py", "chart_gen.py", "task_c.py", "model.py"];
 const GLUE = `
 import json, os, shutil, io, zipfile
 from model import load_editor
