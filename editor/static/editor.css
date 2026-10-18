@@ -313,3 +313,29 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
             font-size: 10.5px; font-weight: 700; text-align: center; margin-right: 4px; }
 .pbadge-i.first { background: #2563eb; }
 .priolist li { display: flex; align-items: center; }
+
+/* ---------------------------------------------------------------- phones / narrow screens */
+#canvas { touch-action: none; -webkit-touch-callout: none; }
+@media (max-width: 760px) {
+  #topbar { height: auto; flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+  .brand { display: none; }
+  .btns { gap: 4px; }
+  .btns.right { margin-left: auto; }
+  button { padding: 6px 10px; }                          /* bigger touch targets */
+  button.mini { padding: 2px 9px; }
+  input, select, textarea { font-size: 16px; }           /* iOS zooms the page into inputs below 16px */
+  /* the left panel becomes a drawer over the canvas (closed at start), not a column that squeezes it */
+  #left { position: absolute; z-index: 15; left: 0; top: 0; bottom: 0; width: min(86vw, 320px);
+          box-shadow: 4px 0 18px rgba(15, 23, 42, .18); }
+  #leftResize { display: none; }
+  #leftToggle { left: min(86vw, 320px); width: 26px; height: 56px; z-index: 16; font-size: 16px; }
+  #left.collapsed + #leftResize + #leftToggle { left: 0; }
+  #tools { left: 8px; top: 8px; max-width: calc(100% - 16px); }
+  #tools button { width: 38px; height: 36px; padding: 0; }
+  #status { left: 8px; max-width: calc(100% - 16px); }
+  /* properties: a sheet at the bottom of the canvas instead of a 290 px card */
+  #right { left: 8px !important; right: 8px !important; top: auto; bottom: 8px; width: auto; max-height: 55%; }
+  #bottom { height: 40vh; }
+  .codebar { flex-wrap: wrap; }
+  #emptyHint { left: 12px; right: 12px; width: auto; max-width: none; }
+}

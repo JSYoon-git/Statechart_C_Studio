@@ -11,3 +11,5 @@ __pycache__/
 /editor/projects/
 /codegen/gen/
 /codegen/__pycache__/
+/editor/static/_qa/
+/editor/static/_tests/

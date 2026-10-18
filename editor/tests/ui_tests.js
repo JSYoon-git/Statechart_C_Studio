@@ -373,8 +373,9 @@ export async function run() {
     e.action = ""; W.snapshot();
   });
   await T("ZIP 내려받기 내용", async () => {
-    const r = await fetch("/api/zip?pkg=" + project.package);
-    const buf = new Uint8Array(await r.arrayBuffer());
+    // server mode: /api/zip; GitHub Pages mode: the Pyodide zip
+    const blob = serverMode === true ? await (await fetch("/api/zip?pkg=" + project.package)).blob() : await Backend.zip(project);
+    const buf = new Uint8Array(await blob.arrayBuffer());
     const text = new TextDecoder("latin1").decode(buf);
     for (const f of ["Controller.c", "Controller.h", "main.c"])
       if (!text.includes(f)) throw new Error("zip lacks " + f);

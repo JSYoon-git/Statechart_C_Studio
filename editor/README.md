@@ -20,8 +20,8 @@ int main(void) {
 }
 ```
 
-- 생성 코드는 **C89(ANSI C / C90)** 입니다: `/* */` 주석만, 선언은 블록 맨 앞, 지정 초기화(`.x = 1`) 없음, `<stdbool.h>` 없음(`bool`은 `uint8_t`, `false`/`true`는 enum 상수로 헤더에 들어 있고, `<stdbool.h>`를 먼저 include했다면 그걸 씁니다). `uint8_t` 등을 쓰려고 `<stdint.h>`만 필요합니다. MSVC C 컴파일러는 C99 확장도 받아 주므로 `tests/c89_lint.py`가 C89 위반(`//`, 선언 뒤 선언 순서, 지정 초기화 …)을 따로 검사하고, gcc가 있으면 Build가 `-std=c89 -pedantic`으로 컴파일합니다.
-- 이벤트·이벤트 큐·타이머·`tm()`·매크로가 **없습니다**. 생성 모듈에는 include guard 말고 `#define`이 하나도 없고, `<stdint.h>`, `<stdbool.h>`만 씁니다.
+- 생성 코드는 **C89(ANSI C / C90)** 입니다: `/* */` 주석만, 선언은 블록 맨 앞, 지정 초기화(`.x = 1`) 없음, `<stdbool.h>` 없음(`bool`은 `uint8_t`, `false`/`true`는 enum 상수로 헤더에 들어 있고, `<stdbool.h>`를 먼저 include했다면 그걸 씁니다). `uint8_t` 등과 `NULL`을 쓰려고 `<stdint.h>`, `<stddef.h>`만 필요합니다. MSVC C 컴파일러는 C99 확장도 받아 주므로 `tests/c89_lint.py`가 C89 위반(`//`, 선언 뒤 선언 순서, 지정 초기화 …)을 따로 검사하고, gcc가 있으면 Build가 `-std=c89 -pedantic`으로 컴파일합니다.
+- 이벤트·이벤트 큐·타이머·`tm()`·매크로가 **없습니다**. 생성 모듈에는 include guard 말고 `#define`이 하나도 없고, `<stddef.h>`, `<stdint.h>`, `<stdbool.h>`만 씁니다.
 - 전이는 **Guard [조건]** 뿐이고, 그림에 쓴 C 코드가 그대로 생성 코드에 들어갑니다. "이벤트"는 입력 변수를 Guard로 읽으면 됩니다. bool도 비교식으로 씁니다(읽기 쉽게): `[button == true]`, `[(raw == true) && (jam == false)]`.
 - **시간은 변수로 셉니다.** `X_Main`은 10 ms마다 불린다고 보고, 상태에 이렇게 씁니다:
   ```

@@ -165,3 +165,13 @@ ARM AAPCS에서 레지스터로 넘어가는 인자는 4개(`me` 포함)까지�
 5. **MISRA 엄격 모드**: 상태 변수 대입에 명시적 캐스트, `IS_IN` 토큰 결합 끄기 (2.2).
 6. **전이 커버리지 측정**: 시뮬레이터에서 `/*## transition */` 단위로 일어난 전이를 세어 "안 밟아 본 전이"를 표시 (2.4).
 7. **타깃 검증**: ARM GCC(또는 XC32)로 `-Wall -Wextra -Wconversion` 빌드, DWT 사이클 측정 (3.2).
+
+## GitHub Pages build (Pyodide + wasm clang) - 2026-10-18
+
+- `python editor/tests/export_parity.py` runs the 45 edge cases + 9 shipped examples on the server and
+  saves the result; in the browser, `Backend.generate/build` must give the same files, the same rejections
+  and the same build verdict (54/54).
+- Found by the stricter clang: generated code used `NULL` without `<stddef.h>` (MSVC/gcc found it through other
+  headers). The generated header now includes `<stddef.h>`.
+- UI tests (`ui_tests.js`, 37/37) pass in the Pages mode; the ZIP test uses the Pyodide zip there.
+- Phones (<= 760 px): left panel is a drawer, properties are a bottom sheet, two-finger pinch zooms.

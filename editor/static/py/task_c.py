@@ -275,7 +275,7 @@ class TaskGen(ClassGen):
     def header(self, types=None):
         n, c, m = self.n, self.c, self.m
         L = [BANNER.format(elem=n, file=f"{n}.h"), f"#ifndef {n}_H", f"#define {n}_H", "",
-             "#include <stdint.h>", "",
+             "#include <stddef.h>", "#include <stdint.h>", "",
              "/* C89 has no <stdbool.h>: bool is a byte, false / true are enumeration constants.",
              " * Written once however many of these headers are included (a guard like the header",
              " * guard), and skipped when <stdbool.h> was included first. */",

@@ -536,6 +536,44 @@ svg.addEventListener("pointerup", (ev) => {
   void dt;
 });
 
+/* two fingers = pinch zoom + pan (the one-finger drag that may already have started is dropped) */
+(() => {
+  const pts = new Map();
+  let pinch = null;
+  const local = (ev) => { const r = svg.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+  const geom = () => {
+    const [a, b] = [...pts.values()];
+    return { mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) };
+  };
+  svg.addEventListener("pointerdown", (ev) => {
+    if (ev.pointerType !== "touch") return;
+    pts.set(ev.pointerId, local(ev));
+    if (pts.size === 2) { drag = null; dropTarget = null; pinch = { ...geom(), v: { ...view } }; render(); }
+    if (pts.size >= 2) ev.stopImmediatePropagation();
+  }, true);
+  svg.addEventListener("pointermove", (ev) => {
+    if (ev.pointerType !== "touch" || !pts.has(ev.pointerId)) return;
+    pts.set(ev.pointerId, local(ev));
+    if (!pinch || pts.size < 2) return;
+    ev.stopImmediatePropagation();
+    const g = geom();
+    const k = Math.max(0.2, Math.min(4, pinch.v.k * g.d / pinch.d));
+    view.x = g.mx - (pinch.mx - pinch.v.x) * k / pinch.v.k;
+    view.y = g.my - (pinch.my - pinch.v.y) * k / pinch.v.k;
+    view.k = k;
+    applyView();
+  }, true);
+  const end = (ev) => {
+    if (ev.pointerType !== "touch") return;
+    const was = pinch;
+    pts.delete(ev.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (was) ev.stopImmediatePropagation();
+  };
+  svg.addEventListener("pointerup", end, true);
+  svg.addEventListener("pointercancel", end, true);
+})();
+
 svg.addEventListener("dblclick", (ev) => {
   const id = hitNodeId(ev.target);
   const n = id && nodes()[id];
@@ -1390,6 +1428,7 @@ $("leftToggle").addEventListener("click", () => {
   $("leftResize").hidden = c;
   keepCanvasStill();
 });
+if (window.matchMedia("(max-width: 760px)").matches) { $("leftToggle").click(); requestAnimationFrame(zoomFit); }   // phones: drawer closed, drawing fitted
 
 
 // ------------------------------------------------------------------ code follows the selection
@@ -1578,7 +1617,7 @@ async function build() {
     $("bCompile").classList.toggle("ok", b.ok && !buildErrors.length);
     if (!b.ok) { showTab("problems"); flash(_t("Build failed — see the Problems tab")); }
     else if (buildErrors.length) { showTab("problems"); flash(_t("Built with warnings — see the Problems tab"), true); }
-    else flash(_t("Built — no warnings (/W4)"), true);
+    else flash(_t(serverMode ? "Built — no warnings (/W4)" : "Built — no warnings (clang, C89)"), true);
     return b.ok;
   } catch (e) { flash(_t("Build failed: ") + e.message); return false; }
   finally { building = false; $("bCompile").textContent = "Build"; }

@@ -145,6 +145,7 @@ const KO = {
  "Build failed — see the Problems tab": "빌드 실패 — Problems 탭을 확인하세요",
  "Built with warnings — see the Problems tab": "빌드 성공 (경고 있음) — Problems 탭",
  "Built — no warnings (/W4)": "빌드 성공 — 경고 없음 (/W4)",
+ "Built — no warnings (clang, C89)": "빌드 성공 — 경고 없음 (clang, C89)",
  "Build failed: ": "빌드 실패: ",
  "Not a project file": "프로젝트 형식이 아닙니다",
  "Ctrl+Z brings the previous project back": "Ctrl+Z로 이전 프로젝트로 되돌릴 수 있습니다",

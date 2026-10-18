@@ -56,10 +56,16 @@ function compileCheck(files) {
     ccWorker.postMessage({ files });
   });
 }
+/* a Python error arrives as a whole traceback; the server reports only its last line ("ValueError: ...") */
+function lastLine(e) {
+  const lines = String(e && e.message || e).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  return new Error(lines[lines.length - 1] || "error");
+}
 const Backend = {
   async generate(project) {
     const py = await loadPy();
-    return JSON.parse(py.globals.get("gen_json")(JSON.stringify(project)));
+    try { return JSON.parse(py.globals.get("gen_json")(JSON.stringify(project))); }
+    catch (e) { throw lastLine(e); }
   },
   async build(project) {
     const g = await this.generate(project);
@@ -68,7 +74,8 @@ const Backend = {
   },
   async zip(project) {
     const py = await loadPy();
-    const bytes = py.globals.get("gen_zip")(JSON.stringify(project)).toJs();
+    let bytes;
+    try { bytes = py.globals.get("gen_zip")(JSON.stringify(project)).toJs(); } catch (e) { throw lastLine(e); }
     return new Blob([bytes], { type: "application/zip" });
   },
   async available() {          // true when the Python server answers
