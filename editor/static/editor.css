@@ -337,5 +337,5 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
   #right { left: 8px !important; right: 8px !important; top: auto; bottom: 8px; width: auto; max-height: 55%; }
   #bottom { height: 40vh; }
   .codebar { flex-wrap: wrap; }
-  #emptyHint { left: 12px; right: 12px; width: auto; max-width: none; }
+  #emptyHint { top: 60%; width: calc(100% - 24px); max-width: none; }
 }
