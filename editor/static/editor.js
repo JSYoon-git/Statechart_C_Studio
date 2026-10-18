@@ -1702,17 +1702,32 @@ $("bLang").addEventListener("click", () => {
 
 (async function boot() {
   applyLanguage();
-  let p = null;
+  let p = null, firstVisit = false;
   try { p = JSON.parse(localStorage.getItem("scstudio.project") || "null"); } catch (e) { p = null; }
   if (!p) {
-    try { p = await (await fetch("examples/trafficlight.json")).json(); } catch (e) { p = blankProject(); }
+    try { p = await (await fetch("examples/blink.json")).json(); } catch (e) { p = blankProject(); }
+    firstVisit = true;
   }
   project = p;
   loadProject(p);
   undoStack.length = 0;
   setTool("select");
   requestAnimationFrame(() => { lastCanvasLeft = svg.getBoundingClientRect().left; zoomFit(); });
+  if (firstVisit) welcomeNewVisitor();
 })();
+
+/* nobody has used the page before: show how to start - the New menu open, a pulsing New button, a short card */
+function welcomeNewVisitor() {
+  try { if (localStorage.getItem("scstudio.welcomed")) return; } catch (e) { /* no storage: show it every time */ }
+  const done = () => {
+    $("welcome").hidden = true; $("bNew").classList.remove("pulse");
+    try { localStorage.setItem("scstudio.welcomed", "1"); } catch (e) { /* ignore */ }
+  };
+  $("welcome").hidden = false; $("newMenu").hidden = false; $("bNew").classList.add("pulse");
+  $("welcomeClose").addEventListener("click", done);
+  $("bNew").addEventListener("click", done, { once: true });
+  svg.addEventListener("pointerdown", () => { $("welcome").hidden = true; }, { once: true });
+}
 
 // ------------------------------------------------------------------ hover help
 /* Every control's title becomes a quick tooltip (the native one appears late and is easy to miss). */
