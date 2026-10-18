@@ -1388,10 +1388,7 @@ $("dlCode").addEventListener("click", () => {
 
 const isPhone = () => window.matchMedia("(max-width: 760px)").matches;
 function setBottom(open) {
-  if (open && isPhone()) {                                 // phone: the code panel and the properties sheet never share the screen
-    $("right").hidden = true;
-    requestAnimationFrame(() => requestAnimationFrame(zoomFit));    // the canvas got shorter: fit the drawing into what is left
-  }
+  if (open && isPhone()) $("right").hidden = true;          // phone: the code panel covers the screen, the properties sheet goes away
   $("bottom").classList.toggle("closed", !open);
   $("splitter").classList.toggle("closed", !open);
   $("bottomToggle").textContent = open ? "▾" : "▴";

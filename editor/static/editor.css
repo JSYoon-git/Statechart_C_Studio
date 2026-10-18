@@ -336,7 +336,15 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
   #status { left: 8px; max-width: calc(100% - 16px); }
   /* properties: a sheet at the bottom of the canvas instead of a 290 px card */
   #right { left: 8px !important; right: 8px !important; top: auto; bottom: 8px; width: auto; max-height: 46%; }
-  #bottom { height: 38vh; }
+  /* the code / problems panel takes the whole screen on a phone; the big arrow at its right goes back to the drawing */
+  #bottom:not(.closed) { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 30; height: auto !important; }
+  #splitter { display: none; }
+  #fileNote { display: none; }
+  #tabs { padding-top: 8px; }
+  #tabs button { padding: 8px 12px; }
+  #bottomToggle { font-size: 18px; padding: 4px 16px !important; background: var(--accent-soft) !important; color: var(--accent) !important; }
+  #fileTabs { gap: 6px; }
+  #code, #codeEdit { font-size: 12.5px; }
   .codebar { flex-wrap: wrap; }
   #emptyHint { top: 60%; width: calc(100% - 24px); max-width: none; }
 }
