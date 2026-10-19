@@ -41,7 +41,15 @@ function setLanguage(lang) {
 }
 
 const KO = {
- "Select / move. Drag empty space = pan, wheel = zoom, double-click = rename, Del = delete": "선택/이동. 빈 곳 드래그 = 화면 이동, 휠 = 확대/축소, 더블클릭 = 이름 바꾸기, Del = 삭제",
+ "Drag this end: slide it along the outline, or drop it on another state": "이 끝점을 끌어 테두리를 따라 옮기거나, 다른 상태에 놓아 연결을 바꿉니다",
+ "Drag from a source state / connector to the target, or click the source then click the target (same state = self transition)": "소스 상태/커넥터에서 타깃까지 드래그하거나, 소스를 클릭한 뒤 타깃을 클릭하세요 (같은 상태 = 자기 전이)",
+ "Default transition: just click the state that starts first. (Or drag from inside a container to the target state)": "기본 천이: 처음 시작할 상태를 클릭하기만 하면 됩니다. (또는 컨테이너 안에서 타깃 상태로 드래그)",
+ "Click a target state or connector": "타깃 상태나 커넥터를 클릭하세요",
+ "Now click the target state": "이제 타깃 상태를 클릭하세요",
+ "Drag to another state to connect; drop on empty space to make a new state": "다른 상태로 드래그하면 연결, 빈 곳에 놓으면 새 상태와 함께 연결됩니다",
+ "Tool kept: draw as many as you like. Esc ends it": "도구 고정: 계속 그릴 수 있습니다. Esc로 해제",
+ "Select a state first, then Ctrl+D": "상태를 먼저 선택한 뒤 Ctrl+D를 누르세요",
+ "Select / move. Pull from a state's outline or its ➜ dots = transition. Drag empty space = pan, wheel = zoom, double-click empty space = new state, arrows = nudge, Ctrl+D = duplicate, Del = delete": "선택/이동. 상태 테두리나 ➜ 점에서 끌면 천이. 빈 곳 드래그 = 화면 이동, 휠 = 확대/축소, 빈 곳 더블클릭 = 새 상태, 화살표 = 미세 이동, Ctrl+D = 복제, Del = 삭제",
  "Drag on empty space or inside a state to make a state (inside = substate)": "빈 곳 또는 상태 안에서 드래그해 상태를 만듭니다 (안에 그리면 하위 상태)",
  "Drag from a source state / connector to the target (drop on the same state = self transition)": "소스 상태/커넥터에서 타깃까지 드래그 (같은 상태로 놓으면 자기 전이)",
  "Default transition: start inside a container (or on empty top level) and drag to the target state": "기본 전이: 컨테이너(또는 최상위 빈 곳) 안에서 시작해 타깃 상태로 드래그",

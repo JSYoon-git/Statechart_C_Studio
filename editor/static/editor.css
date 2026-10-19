@@ -385,3 +385,16 @@ button.danger { color: var(--err); }
 /* Tidy: the button that brings the previous layout back (shown only while the drawing is exactly as Tidy left it) */
 #tools button#untidy { background: #fff7ed; border-color: #f59e0b; color: #9a3412; }
 #untidy[hidden] { display: none; }
+
+/* connect handle: drag from the selected state to another state (or to empty space = new state) */
+.connect circle { fill: var(--sel); stroke: #fff; stroke-width: 1.5; cursor: crosshair; }
+.connect circle:hover { fill: #1d4ed8; }
+.connect path { stroke: #fff; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+#tools button.sticky { box-shadow: inset 0 -3px 0 var(--sel); }
+
+/* drop target: unmistakable while a transition is pulled onto it */
+.state.drop rect.body { stroke: #2563eb; stroke-width: 3.5; stroke-dasharray: none; fill: #dbeafe; }
+.dropring { fill: rgba(37,99,235,.12); stroke: #2563eb; stroke-width: 2.5; }
+.snapdot { fill: #2563eb; stroke: #fff; stroke-width: 2; pointer-events: none; }
+.endpt { fill: #fff; stroke: var(--sel); stroke-width: 2.6; cursor: grab; filter: drop-shadow(0 0 2px rgba(37,99,235,.6)); }
+.endpt:hover { fill: var(--sel); }

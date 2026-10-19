@@ -269,7 +269,13 @@ function render() {
         rt.textContent = ((n.regions || [])[i] || {}).name || `r${i}`;
       }
     }
-    if (isSel) el("rect", { class: "handle", x: n.x + n.w - 5, y: n.y + n.h - 5, width: 10, height: 10, "data-handle": "resize", "data-id": n.id }, gH);
+    if (isSel) {
+      el("rect", { class: "handle", x: n.x + n.w - 5, y: n.y + n.h - 5, width: 10, height: 10, "data-handle": "resize", "data-id": n.id }, gH);
+    }
+    if ((isSel || hoverId === n.id) && !drag) {
+      for (const [hx, hy] of [[n.x + n.w + 14, n.y + n.h / 2], [n.x - 14, n.y + n.h / 2], [n.x + n.w / 2, n.y - 14], [n.x + n.w / 2, n.y + n.h + 14]])
+        connectHandle(gH, hx, hy, n.id);
+    }
   }
 
   for (const n of ns.filter((x) => !isState(x))) {
@@ -294,6 +300,8 @@ function render() {
       const d = r * 0.55;
       el("path", { class: "shape x", d: `M${n.x - d} ${n.y - d} L${n.x + d} ${n.y + d} M${n.x + d} ${n.y - d} L${n.x - d} ${n.y + d}` }, g);
     }
+    if (isSel && n.kind !== "init" && n.kind !== "term") connectHandle(gH, n.x + radius(n) + 18, n.y, n.id);
+    if (dropTarget === n.id) el("circle", { class: "dropring", cx: n.x, cy: n.y, r: r + 7 }, g);
     const tip = el("title", {}, g);
     tip.textContent = { init: _t("Default transition start"), cond: _t("Condition connector (if / else)"), junction: _t("Junction (J): merges transitions"),
                         hist: _t("History connector (H)"), term: _t("Termination connector") }[n.kind] || n.kind;
@@ -328,7 +336,16 @@ function render() {
       const ptt = el("title", {}, pb);
       ptt.textContent = _t("Tested {0} of {1} among the transitions leaving this state — the first true guard wins", rank.k, rank.n);
     }
-    if (isSel) el("circle", { class: "bend", cx: geo.mid.x, cy: geo.mid.y, r: 5, "data-handle": "bend", "data-edge": e.id }, gH);
+    if (isSel) {
+      el("circle", { class: "bend", cx: geo.mid.x, cy: geo.mid.y, r: 5, "data-handle": "bend", "data-edge": e.id }, gH);
+      if (a !== b) {                                   // drag an end: slide along the outline, or drop it on another state
+        const ends = [[0, geo.start, a.kind !== "init"], [1, geo.end, true]];
+        for (const [k, pt, ok] of ends) if (ok) {
+          const c = el("circle", { class: "endpt", cx: pt.x, cy: pt.y, r: 8, "data-handle": "ep" + k, "data-edge": e.id }, gH);
+          const tt = el("title", {}, c); tt.textContent = _t("Drag this end: slide it along the outline, or drop it on another state");
+        }
+      }
+    }
   }
 
   // ⚠ next to every element with a problem
@@ -346,9 +363,18 @@ function render() {
     const b = el("text", { class: "warnbadge " + kind, x: geo.mid.x + (e.lx || 0) - 6, y: geo.mid.y + (e.ly != null ? e.ly : -6) - 14 }, gH);
     b.textContent = "⚠";
   }
-  if (rubber) el("path", { class: "rubber", d: `M${rubber.x1} ${rubber.y1} L${rubber.x2} ${rubber.y2}` }, gH);
+  if (rubber) el("path", { class: "rubber", d: `M${rubber.x1} ${rubber.y1} L${rubber.x2} ${rubber.y2}`, "marker-end": "url(#arrowSel)" }, gH);
+  if (rubber && rubber.snap) el("circle", { class: "snapdot", cx: rubber.snap.x, cy: rubber.snap.y, r: 5 }, gH);
   if (ghost) el("rect", { class: "ghost", x: Math.min(ghost.x1, ghost.x2), y: Math.min(ghost.y1, ghost.y2),
     width: Math.abs(ghost.x2 - ghost.x1), height: Math.abs(ghost.y2 - ghost.y1) }, gH);
+}
+
+/* the small ➜ next to the selected state / connector: drag it onto another state = transition, onto empty space = new state + transition */
+function connectHandle(parent, x, y, id) {
+  const g = el("g", { class: "connect", "data-handle": "connect", "data-id": id }, parent);
+  el("circle", { cx: x, cy: y, r: 10, "data-handle": "connect", "data-id": id }, g);
+  el("path", { d: `M${x - 5} ${y} H${x + 4} M${x + 1} ${y - 4} L${x + 5} ${y} L${x + 1} ${y + 4}` }, g);
+  const t = el("title", {}, g); t.textContent = _t("Drag to another state to connect; drop on empty space to make a new state");
 }
 
 function edgeGeom(e, a, b) {
@@ -364,15 +390,18 @@ function edgeGeom(e, a, b) {
   const dx = cb.x - ca.x, dy = cb.y - ca.y, L = Math.hypot(dx, dy) || 1;
   const nx = -dy / L, ny = dx / L, bend = e.bend || 0;
   const ctrl = { x: mx + nx * bend * 2, y: my + ny * bend * 2 };
-  const p0 = boundary(a, bend ? ctrl : cb), p1 = boundary(b, bend ? ctrl : ca);
+  const p0 = e.sa && isState(a) ? anchorPt(a, e.sa) : boundary(a, bend ? ctrl : cb);
+  const p1 = e.ta && isState(b) ? anchorPt(b, e.ta) : boundary(b, bend ? ctrl : ca);
   const mid = { x: 0.25 * p0.x + 0.5 * ctrl.x + 0.25 * p1.x, y: 0.25 * p0.y + 0.5 * ctrl.y + 0.25 * p1.y };
   const to = bend ? ctrl : p1, dl = Math.hypot(to.x - p0.x, to.y - p0.y) || 1;
   return { d: bend ? `M${p0.x} ${p0.y} Q${ctrl.x} ${ctrl.y} ${p1.x} ${p1.y}` : `M${p0.x} ${p0.y} L${p1.x} ${p1.y}`,
-           mid, nx, ny, ca, cb, start: p0, dir: { x: (to.x - p0.x) / dl, y: (to.y - p0.y) / dl } };
+           mid, nx, ny, ca, cb, start: p0, end: p1, dir: { x: (to.x - p0.x) / dl, y: (to.y - p0.y) / dl } };
 }
 
 // ------------------------------------------------------------------ interaction
 let drag = null, rubber = null, ghost = null, dropTarget = null, spaceDown = false;
+let hoverId = null;                        // state under (or just next to) the pointer: shows its connect handles
+let pending = null;                        // transition tool, first click done: waiting for the target click
 
 function toWorld(ev) {
   const r = svg.getBoundingClientRect();
@@ -385,6 +414,28 @@ function hitNodeId(target) {
     t = t.parentNode;
   }
   return null;
+}
+/* where on the outline of state n the point p is: {u,v} as fractions of the box (it follows moves / resizes).
+   null when p is farther than 14 px from the outline, unless forced - then the line just aims at the center as before */
+function anchorFor(n, p, force) {
+  if (!isState(n)) return null;
+  let x = Math.min(Math.max(p.x, n.x), n.x + n.w), y = Math.min(Math.max(p.y, n.y), n.y + n.h);
+  if (p.x > n.x && p.x < n.x + n.w && p.y > n.y && p.y < n.y + n.h) {          // inside: push out to the nearest side
+    const d = [p.x - n.x, n.x + n.w - p.x, p.y - n.y, n.y + n.h - p.y], m = Math.min(...d);
+    if (m === d[0]) x = n.x; else if (m === d[1]) x = n.x + n.w; else if (m === d[2]) y = n.y; else y = n.y + n.h;
+  }
+  if (!force && Math.hypot(p.x - x, p.y - y) > 14 / view.k) return null;
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  return { u: r3((x - n.x) / n.w), v: r3((y - n.y) / n.h) };
+}
+function anchorPt(n, a) { return { x: n.x + a.u * n.w, y: n.y + a.v * n.h }; }
+/* within 7 px of a state's outline, but not on its resize corner */
+function onBorder(n, p) {
+  const m = 7 / view.k, inX = p.x >= n.x - m && p.x <= n.x + n.w + m, inY = p.y >= n.y - m && p.y <= n.y + n.h + m;
+  if (!inX || !inY) return false;
+  const edge = p.x < n.x + m || p.x > n.x + n.w - m || p.y < n.y + m || p.y > n.y + n.h - m;
+  const corner = Math.hypot(p.x - (n.x + n.w), p.y - (n.y + n.h)) < 12 / view.k;
+  return edge && !corner && !(sel && sel.t === "node" && sel.id === n.id && corner);
 }
 function nodeAtPoint(p, wantState) {
   // topmost: pseudo nodes first, then deepest state
@@ -399,7 +450,10 @@ function nodeAtPoint(p, wantState) {
   return best;
 }
 
+let stickyTool = false;                    // double-click a tool button: it stays selected after each use
+function doneDrawing(ev) { if (!ev.shiftKey && !stickyTool) setTool("select"); }
 function setTool(t) {
+  if (t !== tool) { stickyTool = false; pending = null; rubber = null; }
   tool = t;
   // picking a drawing tool means "I'm about to draw": close the properties card so it can't
   // sit over the spot the user is aiming at
@@ -407,14 +461,17 @@ function setTool(t) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     sel = null; refreshProps(); render();
   }
-  document.querySelectorAll("#tools button[data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === t));
+  document.querySelectorAll("#tools button[data-tool]").forEach((b) => {
+    b.classList.toggle("on", b.dataset.tool === t);
+    b.classList.toggle("sticky", b.dataset.tool === t && stickyTool && t !== "select");
+  });
   svg.style.cursor = t === "select" ? "default" : "crosshair";
   const help = {
-    select: _t("Select / move. Drag empty space = pan, wheel = zoom, double-click = rename, Del = delete"),
+    select: _t("Select / move. Pull from a state's outline or its ➜ dots = transition. Drag empty space = pan, wheel = zoom, double-click empty space = new state, arrows = nudge, Ctrl+D = duplicate, Del = delete"),
     state: _t("Drag on empty space or inside a state to make a state (inside = substate)"),
     note: _t("Note: drag to size it, then type. Notes are comments for readers; they are not written into the C code"),
-    trans: _t("Drag from a source state / connector to the target (drop on the same state = self transition)"),
-    init: _t("Default transition: start inside a container (or on empty top level) and drag to the target state"),
+    trans: _t("Drag from a source state / connector to the target, or click the source then click the target (same state = self transition)"),
+    init: _t("Default transition: just click the state that starts first. (Or drag from inside a container to the target state)"),
     cond: _t("Click where the condition connector goes"), junction: _t("Click where the junction goes"),
     hist: _t("History connector: click inside the composite state it restores"), term: _t("Click where the termination connector goes"),
   };
@@ -450,6 +507,30 @@ svg.addEventListener("pointerdown", (ev) => {
       drag = { kind: "nresize", n, ox: p.x, oy: p.y, w: n.w, h: n.h };
       return;
     }
+    /* pressing an edge (or the selected edge) close to one of its ends grabs that end at once - no need to hit the little circle */
+    const nearEdge = handle ? null : edgeId ? edges()[edgeId] : sel && sel.t === "edge" ? edges()[sel.id] : null;
+    if (nearEdge && nodes()[nearEdge.from] && nodes()[nearEdge.to] && nodes()[nearEdge.from] !== nodes()[nearEdge.to]) {
+      const g = edgeGeom(nearEdge, nodes()[nearEdge.from], nodes()[nearEdge.to]), r = 12 / view.k;
+      const d0 = nodes()[nearEdge.from].kind === "init" ? 1e9 : Math.hypot(p.x - g.start.x, p.y - g.start.y), d1 = Math.hypot(p.x - g.end.x, p.y - g.end.y);
+      if (Math.min(d0, d1) <= r) {
+        sel = { t: "edge", id: nearEdge.id };
+        snapshot();
+        drag = { kind: "ep", e: nearEdge, end: d1 <= d0 ? 1 : 0 };
+        refreshProps(); render();
+        return;
+      }
+    }
+    if (handle === "ep0" || handle === "ep1") {
+      snapshot();
+      drag = { kind: "ep", e: edges()[edgeId], end: +handle[2] };
+      return;
+    }
+    if (handle === "connect") {
+      const n = nodes()[tgt.dataset.id], sa = anchorFor(n, p, true), c = anchorPt(n, sa);
+      rubber = { from: n.id, x1: c.x, y1: c.y, x2: p.x, y2: p.y, fromHandle: true, sa };
+      drag = { kind: "rubber" };
+      return;
+    }
     if (handle === "bend") {
       snapshot();
       drag = { kind: "bend", e: edges()[edgeId] };
@@ -465,6 +546,12 @@ svg.addEventListener("pointerdown", (ev) => {
     }
     if (edgeId) { sel = { t: "edge", id: edgeId }; refreshProps(); render(); return; }
     const id = hitNodeId(tgt);
+    if (id && isState(nodes()[id]) && onBorder(nodes()[id], p) && !ev.shiftKey) {       // grab the outline = pull a transition out of the state
+      const n = nodes()[id], sa = anchorFor(n, p, true), c = anchorPt(n, sa);
+      rubber = { from: id, x1: c.x, y1: c.y, x2: p.x, y2: p.y, fromHandle: true, sa };
+      drag = { kind: "rubber" };
+      return;
+    }
     if (id) {
       sel = { t: "node", id };
       const n = nodes()[id];
@@ -478,11 +565,18 @@ svg.addEventListener("pointerdown", (ev) => {
     return;
   }
   if (tool === "state" || tool === "note") { ghost = { x1: p.x, y1: p.y, x2: p.x, y2: p.y }; drag = { kind: "ghost" }; return; }
+  if (tool === "trans" && pending) {                              // second click of a click-click transition
+    const r = pending; pending = null;
+    const tgt = nodeAtPoint(p);
+    if (!tgt || tgt.kind === "init") { rubber = null; render(); flash(_t("Click a target state or connector")); return; }
+    finishTransition(r, tgt, ev, false, p);
+    return;
+  }
   if (tool === "trans") {
     const n = nodeAtPoint(p);
     if (!n || n.kind === "init") { flash(_t("Start on a source state or connector")); return; }
-    const c = center(n);
-    rubber = { from: n.id, x1: c.x, y1: c.y, x2: p.x, y2: p.y };
+    const sa = anchorFor(n, p), c = sa ? anchorPt(n, sa) : center(n);
+    rubber = { from: n.id, x1: c.x, y1: c.y, x2: p.x, y2: p.y, sa };
     drag = { kind: "rubber" };
     return;
   }
@@ -498,7 +592,7 @@ svg.addEventListener("pointerdown", (ev) => {
     if (tool === "hist" && !n.parent) { undoStack.pop(); flash(_t("A history connector goes inside a composite state")); return; }
     nodes()[n.id] = n;
     sel = { t: "node", id: n.id };
-    if (!ev.shiftKey) setTool("select");
+    doneDrawing(ev);
     refreshAll();
   }
 });
@@ -506,6 +600,21 @@ svg.addEventListener("pointerdown", (ev) => {
 svg.addEventListener("pointermove", (ev) => {
   const p = toWorld(ev);
   $("status").dataset.pos = `${Math.round(p.x)}, ${Math.round(p.y)}`;
+  if (!drag && tool === "select") {
+    const t = hitNodeId(ev.target), n = t && nodes()[t];
+    svg.style.cursor = n && isState(n) && onBorder(n, p) ? "crosshair" : "default";
+  }
+  if (!drag && !pending && tool === "select") {
+    let best = null;
+    for (const n of Object.values(nodes()))
+      if (isState(n) && p.x >= n.x - 26 && p.x <= n.x + n.w + 26 && p.y >= n.y - 26 && p.y <= n.y + n.h + 26 && (!best || n.w * n.h < best.w * best.h)) best = n;
+    if ((best ? best.id : null) !== hoverId) { hoverId = best ? best.id : null; render(); }
+  }
+  if (!drag && pending) {
+    rubber.x2 = p.x; rubber.y2 = p.y;
+    const n = nodeAtPoint(p); dropTarget = n && isState(n) ? n.id : null;
+    render(); return;
+  }
   if (!drag) return;
   if (drag.kind === "pan") {
     view.x = drag.vx + ev.clientX - drag.sx; view.y = drag.vy + ev.clientY - drag.sy; applyView(); return;
@@ -556,8 +665,27 @@ svg.addEventListener("pointermove", (ev) => {
   if (drag.kind === "rubber") {
     rubber.x2 = p.x; rubber.y2 = p.y;
     const n = nodeAtPoint(p);
-    dropTarget = n && isState(n) ? n.id : null;
+    dropTarget = n && n.kind !== "init" ? n.id : null;
+    const a = n && isState(n) ? anchorFor(n, p) : null;
+    rubber.snap = a ? anchorPt(n, a) : null;
     render();
+    return;
+  }
+  if (drag.kind === "ep") {
+    const e = drag.e, node = nodes()[drag.end ? e.to : e.from], other = nodes()[drag.end ? e.from : e.to];
+    const n = nodeAtPoint(p);
+    const key = drag.end ? "ta" : "sa", okey = drag.end ? "sa" : "ta";
+    if (n && n.id !== node.id && n.kind !== "init" && !(drag.end === 0 && n.kind === "term")) {      // hovering another node: preview a reconnect
+      dropTarget = n.id;
+      const o = isState(other) && e[okey] ? anchorPt(other, e[okey]) : center(other);
+      const a = isState(n) ? anchorFor(n, p) : null;
+      rubber = { x1: o.x, y1: o.y, x2: p.x, y2: p.y, snap: a ? anchorPt(n, a) : null };
+    } else {
+      dropTarget = null; rubber = null;
+      if (isState(node)) e[key] = anchorFor(node, p, true);       // slide along the outline of its own state
+    }
+    render();
+    return;
   }
 });
 
@@ -576,6 +704,16 @@ svg.addEventListener("pointerup", (ev) => {
     // pseudo children of moved states keep their container; states inside keep theirs
     save(); refreshAll(); return;
   }
+  if (d.kind === "ep") {
+    rubber = null;
+    const e = d.e, node = nodes()[d.end ? e.to : e.from], n = nodeAtPoint(p);
+    if (n && n.id !== node.id && n.kind !== "init" && !(d.end === 0 && n.kind === "term")) {
+      const a = anchorFor(n, p);
+      if (d.end) { e.to = n.id; e.ta = a; } else { e.from = n.id; e.sa = a; }
+      if (e.from === e.to) { e.sa = e.ta = null; }
+    }
+    save(); refreshAll(); return;
+  }
   if (d.kind === "resize" || d.kind === "bend" || d.kind === "nresize" || (d.kind === "nmove" && d.moved)) { save(); refreshAll(); return; }
   if (d.kind === "ghost" && tool === "note") {
     const g = ghost; ghost = null;
@@ -585,7 +723,7 @@ svg.addEventListener("pointerup", (ev) => {
     const n = { id: uid("t"), x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), text: "", attach: null };
     notesW()[n.id] = n;
     sel = { t: "note", id: n.id };
-    if (!ev.shiftKey) setTool("select");
+    doneDrawing(ev);
     refreshAll();
     focusProp("pNoteText");
     return;
@@ -600,7 +738,7 @@ svg.addEventListener("pointerup", (ev) => {
     setParentAt(n, g.x1, g.y1);
     nodes()[n.id] = n;
     sel = { t: "node", id: n.id };
-    if (!ev.shiftKey) setTool("select");
+    doneDrawing(ev);
     refreshAll();
     focusProp("pName");
     return;
@@ -608,30 +746,82 @@ svg.addEventListener("pointerup", (ev) => {
   if (d.kind === "rubber") {
     const r = rubber; rubber = null;
     const tgt = nodeAtPoint(p);
-    if (!tgt || tgt.kind === "init") { render(); return; }
-    snapshot();
-    let from = r.from;
-    if (r.init) {
-      const c = containerAt(r.x1, r.y1, new Set());
-      const n = { id: uid("n"), kind: "init", x: Math.round(r.x1), y: Math.round(r.y1), parent: c ? c.id : null,
-                  region: c && c.and ? regionAt(c, r.y1) : 0 };
-      if (tgt.id === (c && c.id)) { undoStack.pop(); flash(_t("A default transition must point at a state inside its container")); render(); return; }
-      nodes()[n.id] = n;
-      from = n.id;
+    const moved = Math.hypot(p.x - r.x1, p.y - r.y1) > 8;
+    if (!moved && r.init) {                    // Default transition tool: a plain click on a state is enough
+      if (tgt && isState(tgt)) { autoInit(tgt, ev); return; }
+      render(); return;
     }
-    // a second edge between the same pair bows out so the two don't overlap
-    const twin = Object.values(edges()).some((x) => (x.from === from && x.to === tgt.id) || (x.from === tgt.id && x.to === from));
-    const e = { id: uid("e"), from, to: tgt.id, trigger: "", guard: "", action: "", bend: twin && from !== tgt.id ? 22 : 0 };
-    if (twin) for (const x of Object.values(edges()))
-      if (x.from === tgt.id && x.to === from && !x.bend) x.bend = 22;
-    edges()[e.id] = e;
-    sel = { t: "edge", id: e.id };
-    if (!ev.shiftKey) setTool("select");
-    refreshAll();
-    focusProp(r.init ? "pAction" : "pTrigger");
+    if (!moved && r.from && !r.fromHandle && tool === "trans") {    // click the source, then click the target
+      pending = r; rubber = { ...r, x2: p.x, y2: p.y }; render();
+      flash(_t("Now click the target state"), true);
+      return;
+    }
+    if (!tgt && r.fromHandle && moved) {       // dropped on empty space from the connect handle: new state + transition
+      snapshot();
+      const n = { id: uid("n"), kind: "state", name: freshName("state"), x: Math.round((p.x - 65) / 5) * 5, y: Math.round((p.y - 30) / 5) * 5,
+                  w: 130, h: 60, parent: null, region: 0, entry: "", exit: "", reactions: [] };
+      setParentAt(n, p.x, p.y);
+      nodes()[n.id] = n;
+      finishTransition(r, n, ev, true);
+      return;
+    }
+    if (!tgt || tgt.kind === "init" || (r.fromHandle && !moved)) { render(); return; }
+    finishTransition(r, tgt, ev, false, p);
   }
   void dt;
 });
+
+/* connect r.from (or a new default-transition dot) to tgt and select the new transition */
+function finishTransition(r, tgt, ev, snapped, endP) {
+  if (!snapped) snapshot();
+  r.ta = endP && isState(tgt) ? anchorFor(tgt, endP) : null;
+  let from = r.from;
+  if (r.init) {
+    const c = containerAt(r.x1, r.y1, new Set());
+    const n = { id: uid("n"), kind: "init", x: Math.round(r.x1), y: Math.round(r.y1), parent: c ? c.id : null,
+                region: c && c.and ? regionAt(c, r.y1) : 0 };
+    if (tgt.id === (c && c.id)) { undoStack.pop(); flash(_t("A default transition must point at a state inside its container")); rubber = null; render(); return; }
+    nodes()[n.id] = n;
+    from = n.id;
+  }
+  const e = addEdge(from, tgt.id);
+  if (!r.init && r.from !== tgt.id) { e.sa = r.sa || null; e.ta = r.ta || null; }
+  rubber = null;
+  doneDrawing(ev);
+  refreshAll();
+  focusProp(r.init ? "pAction" : "pTrigger");
+}
+function addEdge(from, to) {
+  // a second edge between the same pair bows out so the two don't overlap
+  const twin = Object.values(edges()).some((x) => (x.from === from && x.to === to) || (x.from === to && x.to === from));
+  const e = { id: uid("e"), from, to, trigger: "", guard: "", action: "", bend: twin && from !== to ? 22 : 0 };
+  if (twin) for (const x of Object.values(edges()))
+    if (x.from === to && x.to === from && !x.bend) x.bend = 22;
+  edges()[e.id] = e;
+  sel = { t: "edge", id: e.id };
+  return e;
+}
+/* Default transition tool, plain click on a state: put the dot where it is free (above / left / right / below the state,
+   inside the same container) and connect it. */
+function autoInit(s, ev) {
+  const c = nodes()[s.parent] || null;
+  const spots = [[s.x + 16, s.y - 28], [s.x - 28, s.y + 18], [s.x + s.w + 28, s.y + 18], [s.x + 16, s.y + s.h + 28]];
+  const free = (x, y) => {
+    const home = containerAt(x, y, new Set());
+    if ((home ? home.id : null) !== (c ? c.id : null)) return false;
+    if (Object.values(nodes()).some((n) => !isState(n) && Math.hypot(n.x - x, n.y - y) < 20)) return false;
+    return !(c && c.and && regionAt(c, y) !== (s.region || 0));
+  };
+  const [x, y] = spots.find(([px, py]) => free(px, py)) || spots[0];
+  snapshot();
+  const n = { id: uid("n"), kind: "init", x: Math.round(x), y: Math.round(y), parent: c ? c.id : null, region: c && c.and ? regionAt(c, y) : 0 };
+  nodes()[n.id] = n;
+  addEdge(n.id, s.id);
+  rubber = null;
+  doneDrawing(ev);
+  refreshAll();
+  focusProp("pAction");
+}
 
 /* two fingers = pinch zoom + pan (the one-finger drag that may already have started is dropped) */
 (() => {
@@ -676,6 +866,17 @@ svg.addEventListener("dblclick", (ev) => {
   if (noteEl && notes()[noteEl.dataset.note]) { sel = { t: "note", id: noteEl.dataset.note }; refreshProps(); render(); focusProp("pNoteText"); return; }
   const id = hitNodeId(ev.target);
   const n = id && nodes()[id];
+  if (!id && !ev.target.dataset.edge && tool === "select" && !ev.target.closest(".handle, .connect")) {     // empty canvas: a state right here
+    const p = toWorld(ev);
+    snapshot();
+    const s = { id: uid("n"), kind: "state", name: freshName("state"), x: Math.round((p.x - 65) / 5) * 5, y: Math.round((p.y - 30) / 5) * 5,
+                w: 130, h: 60, parent: null, region: 0, entry: "", exit: "", reactions: [] };
+    setParentAt(s, p.x, p.y);
+    nodes()[s.id] = s;
+    sel = { t: "node", id: s.id };
+    refreshAll(); focusProp("pName");
+    return;
+  }
   if (n && isState(n)) {
     sel = { t: "node", id }; refreshProps(); focusProp("pName");
   } else if (ev.target.dataset && ev.target.dataset.edge) {
@@ -711,8 +912,11 @@ function deleteSelection() {
   if (!sel) return;
   snapshot();
   if (sel.t === "note") delete notes()[sel.id];
-  else if (sel.t === "edge") delete edges()[sel.id];
-  else {
+  else if (sel.t === "edge") {
+    delete edges()[sel.id];
+    for (const x of Object.values(nodes()))        // a default-transition dot left without its line would just be a stray dot
+      if (x.kind === "init" && !Object.values(edges()).some((e) => e.from === x.id)) delete nodes()[x.id];
+  } else {
     const n = nodes()[sel.id];
     const gone = new Set([sel.id, ...(n && isState(n) ? descendants(sel.id).map((d) => d.id) : [])]);
     for (const id of gone) delete nodes()[id];
@@ -734,13 +938,45 @@ document.addEventListener("keydown", (ev) => {
   if (inField) return;
   if (ev.key === " ") { spaceDown = true; svg.style.cursor = "grab"; ev.preventDefault(); return; }
   if (ev.key === "Delete" || ev.key === "Backspace") { deleteSelection(); ev.preventDefault(); return; }
-  if (ev.key === "Escape") { setTool("select"); rubber = ghost = null; drag = null; sel = null; refreshProps(); render(); return; }
+  if (sel && sel.t !== "edge" && sel.t !== "class" && ev.key.startsWith("Arrow")) {       // nudge: 5 px (Shift = 20)
+    const st = ev.shiftKey ? 20 : 5, dx = { ArrowLeft: -st, ArrowRight: st }[ev.key] || 0, dy = { ArrowUp: -st, ArrowDown: st }[ev.key] || 0;
+    const n = sel.t === "note" ? notes()[sel.id] : nodes()[sel.id];
+    if (n) {
+      snapshot();
+      const moving = sel.t === "node" ? [n, ...(isState(n) ? descendants(n.id) : [])] : [n];
+      const stuck = sel.t === "node" ? Object.values(notes()).filter((t) => moving.some((m) => m.id === t.attach)) : [];
+      for (const m of [...moving, ...stuck]) { m.x += dx; m.y += dy; }
+      save(); render(); ev.preventDefault(); return;
+    }
+  }
+  if (ev.key === "Enter" && sel && sel.t === "node" && isState(nodes()[sel.id])) { focusProp("pName"); ev.preventDefault(); return; }
+  if (ev.key === "Enter" && sel && sel.t === "edge") { focusProp(nodes()[edges()[sel.id].from].kind === "init" ? "pAction" : "pGuard"); ev.preventDefault(); return; }
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "d") { ev.preventDefault(); duplicateSelection(); return; }
+  if (ev.key === "Escape") { setTool("select"); rubber = ghost = null; pending = null; drag = null; sel = null; refreshProps(); render(); return; }
   const map = { v: "select", s: "state", t: "trans", d: "init", c: "cond", j: "junction", h: "hist", x: "term", n: "note" };
   if (map[ev.key.toLowerCase()] && !ev.ctrlKey) setTool(map[ev.key.toLowerCase()]);
   if (ev.key.toLowerCase() === "f") zoomFit();
 });
 document.addEventListener("keyup", (ev) => { if (ev.key === " ") { spaceDown = false; setTool(tool); } });
 
+/* Ctrl+D: copy of the selected state (with everything inside it and the transitions among them), a little to the lower right */
+function duplicateSelection() {
+  if (!sel || sel.t !== "node" || !isState(nodes()[sel.id])) return flash(_t("Select a state first, then Ctrl+D"));
+  snapshot();
+  const root = nodes()[sel.id], set = [root, ...descendants(root.id)], map = {};
+  for (const n of set) map[n.id] = uid("n");
+  for (const n of set) {
+    const c = JSON.parse(JSON.stringify(n));
+    c.id = map[n.id]; c.x += 30; c.y += 30;
+    c.parent = n === root ? root.parent : map[n.parent];
+    if (n === root) c.name = freshName(root.name.replace(/\d+$/, ""));
+    nodes()[c.id] = c;
+  }
+  for (const e of Object.values(edges()))
+    if (map[e.from] && map[e.to]) { const c = JSON.parse(JSON.stringify(e)); c.id = uid("e"); c.from = map[e.from]; c.to = map[e.to]; edges()[c.id] = c; }
+  sel = { t: "node", id: map[root.id] };
+  refreshAll();
+}
 function freshName(base) {
   const used = new Set(Object.values(nodes()).filter(isState).map((n) => n.name));
   for (let i = 0; ; i++) if (!used.has(base + i)) return base + i;
@@ -1808,14 +2044,24 @@ $("fileInput").addEventListener("change", async (ev) => {
   sp.addEventListener("pointerup", () => { y0 = null; });
 })();
 
-document.querySelectorAll("#tools button[data-tool]").forEach((b) => b.addEventListener("click", () => setTool(b.dataset.tool)));
+document.querySelectorAll("#tools button[data-tool]").forEach((b) => {
+  b.addEventListener("click", () => setTool(b.dataset.tool));
+  b.addEventListener("dblclick", () => {            // double-click a tool = keep it (draw many in a row); Esc / V ends it
+    if (b.dataset.tool === "select") return;
+    setTool(b.dataset.tool); stickyTool = true; setTool(tool);
+    flash(_t("Tool kept: draw as many as you like. Esc ends it"), true);
+  });
+});
 $("zoomFit").addEventListener("click", zoomFit);
 $("propsClose").addEventListener("click", () => { sel = null; refreshProps(); render(); svg.focus(); });
 $("optimize").addEventListener("click", () => {
   if (!Object.values(nodes()).some(isState)) return flash(_t("No states to tidy"));
   snapshot();
   const was = Object.fromEntries(Object.values(nodes()).map((n) => [n.id, { x: n.x, y: n.y }]));
+  const anch = Object.values(edges()).map((e) => [e, e.sa, e.ta]);
+  for (const [e] of anch) { e.sa = e.ta = null; }                // Tidy routes the lines itself
   const r = window.optimizeLayout(nodes(), edges());
+  if (!r.changed) for (const [e, sa, ta] of anch) { e.sa = sa; e.ta = ta; }
   if (!r.changed) { undoStack.pop(); return flash(_t("The current layout is already tidier — nothing changed"), true); }
   for (const t of Object.values(notes())) {                     // a note stays at the same place beside its state
     const a = was[t.attach], b = nodes()[t.attach];
