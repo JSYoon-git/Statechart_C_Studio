@@ -41,7 +41,7 @@ export async function run() {
 
   const langBefore = LANG; W.setLanguage("ko");     // the checks below look for the Korean messages
   W.loadProject(W.blankProject());
-  $("welcome").hidden = true; $("newMenu").hidden = true;      // first-visit welcome card / open New menu would cover the canvas
+  $("newMenu").hidden = true;      // an open New menu would cover the canvas
   W.setBottom(false);                         // start with the whole canvas visible
   view = { x: 0, y: 0, k: 1 }; W.applyView();
   const origAlert = W.alert, origConfirm = W.confirm, alerts = [];
@@ -72,10 +72,14 @@ export async function run() {
   });
   await T("전이 그리기 + Guard 입력 (시간은 카운터 변수로)", async () => {
     tool("trans"); await drag(200, 130, 520, 92);            // IDLE -> WORK (lands on WORK's name bar)
+    eq(document.querySelector("#tools button.on").dataset.tool, "select", "back to Select after one line");
+    const drawn = Object.values(E()).pop(); sel = { t: "edge", id: drawn.id }; W.refreshProps();   // a drawn line is not selected: pick it
     typeInto($("pGuard"), "start");
     tool("trans"); await drag(440, 160, 540, 265);           // STEP1 -> STEP2
+    sel = { t: "edge", id: Object.values(E()).pop().id }; W.refreshProps();
     typeInto($("pGuard"), "cnt >= 50u");
     tool("trans"); await drag(600, 100, 180, 150);           // WORK -> IDLE
+    sel = { t: "edge", id: Object.values(E()).pop().id }; W.refreshProps();
     typeInto($("pGuard"), "stop");
     $("pGuard").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));   // done
     const lbl = Object.values(E()).filter((e) => N()[e.from].kind === "state").map((e) => `${N()[e.from].name}>${N()[e.to].name}:${e.trigger}[${e.guard}]`).sort();
@@ -113,6 +117,7 @@ export async function run() {
     tool("trans"); await drag(150, 140, 160, 145);
     const self = Object.values(E()).find((e) => e.from === e.to);
     if (!self) throw new Error("no self transition");
+    sel = { t: "edge", id: self.id }; W.refreshProps();
     typeInto($("pGuard"), "start");
   });
   await T("전이 우선순위: 번호 표시, ▼로 바꾸면 생성 코드의 검사 순서도 바뀜", async () => {

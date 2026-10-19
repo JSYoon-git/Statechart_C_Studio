@@ -358,18 +358,11 @@ h3 .owner { text-transform: none; letter-spacing: 0; font-weight: 400; color: va
   #emptyHint { top: 60%; width: calc(100% - 24px); max-width: none; }
 }
 
-/* first visit: welcome card + a gentle pulse on New */
-#welcome { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 3; width: min(460px, calc(100% - 24px));
-  background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 36px 12px 16px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, .18); }
-#welcome[hidden] { display: none; }
-#welcome ol { margin: 0; padding-left: 20px; font-size: 13px; }
-#welcome li { margin: 2px 0; }
-#welcomeClose { position: absolute; right: 6px; top: 6px; border: none; background: none; color: var(--dim); font-size: 14px; padding: 2px 6px; }
+/* first visit: New is the one loud thing on the page, with a bubble that points at it */
 .menu { max-height: 72vh; overflow: auto; }
-#bNew.pulse { animation: newpulse 1.6s ease-in-out infinite; }
-@keyframes newpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .55); } 50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); } }
-@media (prefers-reduced-motion: reduce) { #bNew.pulse { animation: none; border-color: var(--accent); } }
+#bNew.pulse { animation: newpulse 1.4s ease-in-out infinite; background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+@keyframes newpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .55); } 50% { box-shadow: 0 0 0 9px rgba(37, 99, 235, 0); } }
+@media (prefers-reduced-motion: reduce) { #bNew.pulse { animation: none; } }
 
 /* notes: comments on the drawing */
 .note .body { fill: #eaf2ff; stroke: #6b8fd6; stroke-width: 1.2; }
@@ -387,9 +380,11 @@ button.danger { color: var(--err); }
 #untidy[hidden] { display: none; }
 
 /* connect handle: drag from the selected state to another state (or to empty space = new state) */
-.connect circle { fill: var(--sel); stroke: #fff; stroke-width: 1.5; cursor: crosshair; }
-.connect circle:hover { fill: #1d4ed8; }
-.connect path { stroke: #fff; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.connect { opacity: .4; }
+.connect:hover { opacity: 1; }
+.connect circle { fill: #94a3b8; stroke: #fff; stroke-width: 1; cursor: crosshair; }
+.connect:hover circle { fill: var(--sel); }
+.connect path { stroke: #fff; stroke-width: 1.3; fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 #tools button.sticky { box-shadow: inset 0 -3px 0 var(--sel); }
 
 /* drop target: unmistakable while a transition is pulled onto it */
@@ -398,3 +393,17 @@ button.danger { color: var(--err); }
 .snapdot { fill: #2563eb; stroke: #fff; stroke-width: 2; pointer-events: none; }
 .endpt { fill: #fff; stroke: var(--sel); stroke-width: 2.6; cursor: grab; filter: drop-shadow(0 0 2px rgba(37,99,235,.6)); }
 .endpt:hover { fill: var(--sel); }
+
+/* guided tour */
+#tour { position: fixed; inset: 0; z-index: 100; }
+#tourHole { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(15, 23, 42, .55), 0 0 0 3px var(--accent); transition: all .25s ease; pointer-events: none; }
+#tourCard { position: fixed; background: var(--panel); border-radius: 12px; padding: 14px 16px 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .35); font-size: 13.5px; line-height: 1.5; }
+#tourCard .tstep { font-size: 11.5px; color: var(--dim); }
+#tourCard .ttitle { font-size: 16px; font-weight: 700; margin: 2px 0 6px; }
+#tourCard .tbody { color: var(--text, #1f2937); }
+#tourCard .tbtns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 12px; }
+#tourCard .tskip { margin-right: auto; border: none; background: none; color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { #tourHole { transition: none; } }
+#bTour { font-weight: 700; width: 30px; padding: 0; }
+
+.pseudo.k-init.sel .fill { fill: var(--sel); }

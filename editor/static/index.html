@@ -32,6 +32,7 @@
     <button id="bSave" title="Save your statechart as a file on your computer (.json) to open it again later (Ctrl+S)">Save</button>
   </div>
   <div class="btns right">
+    <button id="bTour" title="Quick tour of the screen">?</button>
     <button id="bLang" title="Language / 언어">한국어</button>
     <button id="bGen" class="primary" title="Generate the C code">Generate C</button>
     <button id="bCompile" class="primary" title="Compile every generated .c file (MSVC /W4). Errors and warnings go to the Problems tab">Build</button>
@@ -96,15 +97,6 @@
       <g id="world"></g>
     </svg>
     <div id="status"></div>
-    <div id="welcome" hidden>
-      <button id="welcomeClose" title="Close">✕</button>
-      <div class="eh-title" data-i18n>Welcome — start here</div>
-      <ol>
-        <li data-i18n><b>LED blink</b> (New ▾ → Beginner) is the easiest start: two states switched by the guard <code>cnt &gt;= blinkTicks</code></li>
-        <li data-i18n>Press <b>Generate C</b> to see the C code, <b>Build</b> to compile it in your browser</li>
-        <li data-i18n>Your work is kept in this browser. <b>Save</b> stores your statechart as a file on your computer, <b>Open</b> loads it again; <b>New ▾</b> has other examples</li>
-      </ol>
-    </div>
     <div id="emptyHint" hidden>
       <div class="eh-title" data-i18n>Draw a statechart</div>
       <ol>

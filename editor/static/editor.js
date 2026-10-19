@@ -272,14 +272,14 @@ function render() {
     if (isSel) {
       el("rect", { class: "handle", x: n.x + n.w - 5, y: n.y + n.h - 5, width: 10, height: 10, "data-handle": "resize", "data-id": n.id }, gH);
     }
-    if ((isSel || hoverId === n.id) && !drag) {
+    if (hoverId === n.id && !drag) {
       for (const [hx, hy] of [[n.x + n.w + 14, n.y + n.h / 2], [n.x - 14, n.y + n.h / 2], [n.x + n.w / 2, n.y - 14], [n.x + n.w / 2, n.y + n.h + 14]])
         connectHandle(gH, hx, hy, n.id);
     }
   }
 
   for (const n of ns.filter((x) => !isState(x))) {
-    const isSel = sel && sel.t === "node" && sel.id === n.id;
+    const isSel = sel && ((sel.t === "node" && sel.id === n.id) || (n.kind === "init" && sel.t === "edge" && (edges()[sel.id] || {}).from === n.id));
     const g = el("g", { class: "pseudo k-" + n.kind + (isSel ? " sel" : "") + markClass("node", n.id), "data-id": n.id }, gP);
     const r = radius(n);
     // five different shapes and colors, so none is mistaken for another:
@@ -372,9 +372,9 @@ function render() {
 /* the small ➜ next to the selected state / connector: drag it onto another state = transition, onto empty space = new state + transition */
 function connectHandle(parent, x, y, id) {
   const g = el("g", { class: "connect", "data-handle": "connect", "data-id": id }, parent);
-  el("circle", { cx: x, cy: y, r: 10, "data-handle": "connect", "data-id": id }, g);
-  el("path", { d: `M${x - 5} ${y} H${x + 4} M${x + 1} ${y - 4} L${x + 5} ${y} L${x + 1} ${y + 4}` }, g);
-  const t = el("title", {}, g); t.textContent = _t("Drag to another state to connect; drop on empty space to make a new state");
+  el("circle", { cx: x, cy: y, r: 6, "data-handle": "connect", "data-id": id }, g);
+  el("path", { d: `M${x - 3} ${y} H${x + 2} M${x} ${y - 2.5} L${x + 3} ${y} L${x} ${y + 2.5}` }, g);
+  const t = el("title", {}, g); t.textContent = _t("Drag to another state to connect (Shift + drop on empty space = new state)");
 }
 
 function edgeGeom(e, a, b) {
@@ -437,6 +437,17 @@ function onBorder(n, p) {
   const corner = Math.hypot(p.x - (n.x + n.w), p.y - (n.y + n.h)) < 12 / view.k;
   return edge && !corner && !(sel && sel.t === "node" && sel.id === n.id && corner);
 }
+/* a state whose outline is within 12 px of p (missing it by a little still counts) */
+function nearState(p) {
+  const m = 12 / view.k;
+  let best = null, bd = 1e9;
+  for (const n of Object.values(nodes())) {
+    if (!isState(n)) continue;
+    const dx = Math.max(n.x - p.x, 0, p.x - n.x - n.w), dy = Math.max(n.y - p.y, 0, p.y - n.y - n.h), d = Math.hypot(dx, dy);
+    if (d <= m && d < bd) { best = n; bd = d; }
+  }
+  return best;
+}
 function nodeAtPoint(p, wantState) {
   // topmost: pseudo nodes first, then deepest state
   for (const n of Object.values(nodes())) {
@@ -451,7 +462,7 @@ function nodeAtPoint(p, wantState) {
 }
 
 let stickyTool = false;                    // double-click a tool button: it stays selected after each use
-function doneDrawing(ev) { if (!ev.shiftKey && !stickyTool) setTool("select"); }
+function doneDrawing(ev) { if (!ev.shiftKey && !stickyTool) setTool("select"); }        // one line drawn: back to Select (Shift / double-click on the tool = keep drawing)
 function setTool(t) {
   if (t !== tool) { stickyTool = false; pending = null; rubber = null; }
   tool = t;
@@ -545,7 +556,7 @@ svg.addEventListener("pointerdown", (ev) => {
       return;
     }
     if (edgeId) { sel = { t: "edge", id: edgeId }; refreshProps(); render(); return; }
-    const id = hitNodeId(tgt);
+    let id = hitNodeId(tgt);
     if (id && isState(nodes()[id]) && onBorder(nodes()[id], p) && !ev.shiftKey) {       // grab the outline = pull a transition out of the state
       const n = nodes()[id], sa = anchorFor(n, p, true), c = anchorPt(n, sa);
       rubber = { from: id, x1: c.x, y1: c.y, x2: p.x, y2: p.y, fromHandle: true, sa };
@@ -555,6 +566,8 @@ svg.addEventListener("pointerdown", (ev) => {
     if (id) {
       sel = { t: "node", id };
       const n = nodes()[id];
+      const own = n.kind === "init" ? Object.values(edges()).find((e) => e.from === id) : null;
+      if (own) sel = { t: "edge", id: own.id };          // dot and line are one thing: selecting either selects both
       const moving = [n, ...(isState(n) ? descendants(id) : [])];
       const stuck = Object.values(notes()).filter((t) => moving.some((m) => m.id === t.attach));      // notes attached to them follow
       drag = { kind: "move", n, start: p, orig: [...moving, ...stuck].map((m) => ({ m, x: m.x, y: m.y })), moved: false };
@@ -567,13 +580,13 @@ svg.addEventListener("pointerdown", (ev) => {
   if (tool === "state" || tool === "note") { ghost = { x1: p.x, y1: p.y, x2: p.x, y2: p.y }; drag = { kind: "ghost" }; return; }
   if (tool === "trans" && pending) {                              // second click of a click-click transition
     const r = pending; pending = null;
-    const tgt = nodeAtPoint(p);
+    const tgt = nodeAtPoint(p) || nearState(p);
     if (!tgt || tgt.kind === "init") { rubber = null; render(); flash(_t("Click a target state or connector")); return; }
     finishTransition(r, tgt, ev, false, p);
     return;
   }
   if (tool === "trans") {
-    const n = nodeAtPoint(p);
+    const n = nodeAtPoint(p) || nearState(p);
     if (!n || n.kind === "init") { flash(_t("Start on a source state or connector")); return; }
     const sa = anchorFor(n, p), c = sa ? anchorPt(n, sa) : center(n);
     rubber = { from: n.id, x1: c.x, y1: c.y, x2: p.x, y2: p.y, sa };
@@ -664,7 +677,7 @@ svg.addEventListener("pointermove", (ev) => {
   if (drag.kind === "ghost") { ghost.x2 = p.x; ghost.y2 = p.y; render(); return; }
   if (drag.kind === "rubber") {
     rubber.x2 = p.x; rubber.y2 = p.y;
-    const n = nodeAtPoint(p);
+    const n = nodeAtPoint(p) || (rubber.init ? null : nearState(p));
     dropTarget = n && n.kind !== "init" ? n.id : null;
     const a = n && isState(n) ? anchorFor(n, p) : null;
     rubber.snap = a ? anchorPt(n, a) : null;
@@ -745,7 +758,7 @@ svg.addEventListener("pointerup", (ev) => {
   }
   if (d.kind === "rubber") {
     const r = rubber; rubber = null;
-    const tgt = nodeAtPoint(p);
+    const tgt = nodeAtPoint(p) || (r.init ? null : nearState(p));
     const moved = Math.hypot(p.x - r.x1, p.y - r.y1) > 8;
     if (!moved && r.init) {                    // Default transition tool: a plain click on a state is enough
       if (tgt && isState(tgt)) { autoInit(tgt, ev); return; }
@@ -756,7 +769,8 @@ svg.addEventListener("pointerup", (ev) => {
       flash(_t("Now click the target state"), true);
       return;
     }
-    if (!tgt && r.fromHandle && moved) {       // dropped on empty space from the connect handle: new state + transition
+    if (!tgt && r.fromHandle && moved && !ev.shiftKey) { rubber = null; render(); flash(_t("Dropped on empty space: nothing created (hold Shift while dropping to make a new state)")); return; }
+    if (!tgt && r.fromHandle && moved) {       // Shift + drop on empty space: new state + transition
       snapshot();
       const n = { id: uid("n"), kind: "state", name: freshName("state"), x: Math.round((p.x - 65) / 5) * 5, y: Math.round((p.y - 30) / 5) * 5,
                   w: 130, h: 60, parent: null, region: 0, entry: "", exit: "", reactions: [] };
@@ -787,9 +801,10 @@ function finishTransition(r, tgt, ev, snapped, endP) {
   const e = addEdge(from, tgt.id);
   if (!r.init && r.from !== tgt.id) { e.sa = r.sa || null; e.ta = r.ta || null; }
   rubber = null;
+  sel = null;                                      // no card popping up over the drawing; double-click the line to type guard / action
   doneDrawing(ev);
   refreshAll();
-  focusProp(r.init ? "pAction" : "pTrigger");
+  if (!r.init) flash(_t("Transition drawn. Double-click it to type a guard / action"), true);
 }
 function addEdge(from, to) {
   // a second edge between the same pair bows out so the two don't overlap
@@ -798,7 +813,6 @@ function addEdge(from, to) {
   if (twin) for (const x of Object.values(edges()))
     if (x.from === to && x.to === from && !x.bend) x.bend = 22;
   edges()[e.id] = e;
-  sel = { t: "edge", id: e.id };
   return e;
 }
 /* Default transition tool, plain click on a state: put the dot where it is free (above / left / right / below the state,
@@ -818,9 +832,9 @@ function autoInit(s, ev) {
   nodes()[n.id] = n;
   addEdge(n.id, s.id);
   rubber = null;
+  sel = null;
   doneDrawing(ev);
   refreshAll();
-  focusProp("pAction");
 }
 
 /* two fingers = pinch zoom + pan (the one-finger drag that may already have started is dropped) */
@@ -880,7 +894,7 @@ svg.addEventListener("dblclick", (ev) => {
   if (n && isState(n)) {
     sel = { t: "node", id }; refreshProps(); focusProp("pName");
   } else if (ev.target.dataset && ev.target.dataset.edge) {
-    sel = { t: "edge", id: ev.target.dataset.edge }; refreshProps(); focusProp("pTrigger");
+    sel = { t: "edge", id: ev.target.dataset.edge }; refreshProps(); focusProp(nodes()[edges()[sel.id].from].kind === "init" ? "pAction" : "pGuard");
   }
 });
 
@@ -2083,6 +2097,7 @@ $("untidy").addEventListener("click", () => {
 
 // ------------------------------------------------------------------ boot
 /* EN / 한국어: the static page is translated by i18n.js, the panels are drawn again with _t() */
+$("bTour").addEventListener("click", startTour);
 $("bLang").addEventListener("click", () => {
   setLanguage(LANG === "ko" ? "en" : "ko");
   refreshAll();
@@ -2107,17 +2122,75 @@ $("bLang").addEventListener("click", () => {
   if (firstVisit) welcomeNewVisitor();
 })();
 
-/* nobody has used the page before: show how to start - the New menu open, a pulsing New button, a short card */
-function welcomeNewVisitor() {
-  try { if (localStorage.getItem("scstudio.welcomed")) return; } catch (e) { /* no storage: show it every time */ }
-  const done = () => {
-    $("welcome").hidden = true; $("bNew").classList.remove("pulse");
+/* First visit: a short guided tour (spotlight + card). The "?" button in the top bar starts it again. */
+const TOUR = [
+  { sel: "#bNew", t: "Start from an example", b: "New ▾ has ready-made examples, easiest first. LED blink is open now - you are looking at a working statechart." },
+  { sel: "#world", t: "This is a statechart", b: "Boxes are states, arrows are transitions, ●→ marks the state that starts first. Here LED_OFF turns into LED_ON when the counter reaches blinkTicks, and back again.", pad: 18 },
+  { sel: "#tools", t: "Draw with these tools", b: "▭ state, → transition, ●→ default transition. Faster: point at a state and pull from its outline, or double-click empty space for a new state. Esc / V goes back to Select." },
+  { sel: "#left", t: "Variables", b: "INPUT comes in from outside (a button), OUTPUT goes out (an LED), CONFIG is a fixed setting, INTERNAL is the chart's own memory such as counters. In guards and actions just write the name.", phone: false },
+  { sel: "#bGen", t: "Generate C", b: "Turns the drawing into C code (X.c / X.h). Change the drawing and press it again." },
+  { sel: "#bCompile", t: "Build", b: "Compiles that C code right here in your browser and lists warnings and errors in Problems. Nothing is sent to a server." },
+  { sel: "#bSave", t: "Keep your work", b: "Your drawing stays in this browser. Save stores it as a file on your computer; Open loads it back." },
+];
+let tourStep = 0, tourOn = false;
+function startTour() {
+  if (tourOn) return;
+  tourOn = true; tourStep = 0;
+  $("newMenu").hidden = true;
+  const ov = h("div", { id: "tour" }), hole = h("div", { id: "tourHole" }), card = h("div", { id: "tourCard" });
+  ov.append(hole, card);
+  document.body.append(ov);
+  const steps = () => TOUR.filter((s) => !(isPhone() && s.phone === false) && document.querySelector(s.sel) && document.querySelector(s.sel).getBoundingClientRect().width > 0);
+  const end = () => {
+    tourOn = false; ov.remove(); $("bNew").classList.remove("pulse");
+    document.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("resize", show);
     try { localStorage.setItem("scstudio.welcomed", "1"); } catch (e) { /* ignore */ }
   };
-  $("welcome").hidden = false; $("newMenu").hidden = false; $("bNew").classList.add("pulse");
-  $("welcomeClose").addEventListener("click", done);
-  $("bNew").addEventListener("click", done, { once: true });
-  svg.addEventListener("pointerdown", () => { $("welcome").hidden = true; }, { once: true });
+  const onKey = (ev) => {
+    if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); end(); }
+    else if (ev.key === "ArrowRight" || ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); go(1); }
+    else if (ev.key === "ArrowLeft") { ev.preventDefault(); ev.stopPropagation(); go(-1); }
+  };
+  const go = (d) => { const n = steps().length; if (tourStep + d >= n) return end(); tourStep = Math.max(0, tourStep + d); show(); };
+  function show() {
+    const list = steps(), s = list[Math.min(tourStep, list.length - 1)];
+    if (!s) return end();
+    const el = document.querySelector(s.sel);
+    let r = el.getBoundingClientRect();
+    if (s.sel === "#world") {                          // the drawing: its real extent, kept inside the canvas
+      const c = $("center").getBoundingClientRect();
+      r = { left: Math.max(r.left, c.left + 8), top: Math.max(r.top, c.top + 8), right: Math.min(r.right, c.right - 8), bottom: Math.min(r.bottom, c.bottom - 8) };
+    }
+    const pad = s.pad || 6;
+    Object.assign(hole.style, { left: r.left - pad + "px", top: r.top - pad + "px", width: r.right - r.left + 2 * pad + "px", height: r.bottom - r.top + 2 * pad + "px" });
+    card.textContent = "";
+    const last = tourStep >= list.length - 1;
+    card.append(
+      h("div", { class: "tstep" }, `${tourStep + 1} / ${list.length}`),
+      h("div", { class: "ttitle" }, _t(s.t)),
+      h("div", { class: "tbody" }, _t(s.b)),
+      h("div", { class: "tbtns" },
+        h("button", { class: "tskip", on: { click: end } }, last ? "" : _t("Skip")),
+        tourStep > 0 ? h("button", { on: { click: () => go(-1) } }, _t("Back")) : null,
+        h("button", { class: "primary", on: { click: () => go(1) } }, last ? _t("Start drawing") : _t("Next"))));
+    const cw = Math.min(320, window.innerWidth - 24), ch = card.offsetHeight || 170;
+    card.style.width = cw + "px";
+    let top = r.bottom + pad + 12;
+    if (top + ch > window.innerHeight - 8) top = Math.max(8, r.top - pad - 12 - ch);
+    if (top + ch > window.innerHeight - 8 || top < 8) top = Math.max(8, window.innerHeight - ch - 12);      // big target: card inside it, low
+    const left = Math.min(Math.max(8, r.left + (r.right - r.left) / 2 - cw / 2), window.innerWidth - cw - 8);
+    Object.assign(card.style, { left: left + "px", top: top + "px" });
+    card.querySelector(".primary").focus({ preventScroll: true });
+  }
+  document.addEventListener("keydown", onKey, true);
+  window.addEventListener("resize", show);
+  show();
+}
+function welcomeNewVisitor() {
+  try { if (localStorage.getItem("scstudio.welcomed")) return; } catch (e) { /* no storage: show it every time */ }
+  $("bNew").classList.add("pulse");
+  setTimeout(startTour, 400);
 }
 
 // ------------------------------------------------------------------ hover help
