@@ -211,5 +211,118 @@
     }
    }
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Buy: two coins, select, dispense",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=500",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=500",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, select=1",
+     "expect": "dispense=true"
+    },
+    {
+     "n": 149,
+     "set": "select=0",
+     "expect": "dispense=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "dispense=false"
+    }
+   ]
+  },
+  {
+   "name": "Not enough credit: nothing, and the credit is kept",
+   "steps": [
+    {
+     "n": 1,
+     "set": "coin=500",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, select=1",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "select=0, coin=500",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, select=1",
+     "expect": "dispense=true"
+    }
+   ]
+  },
+  {
+   "name": "Cancel gives the money back",
+   "steps": [
+    {
+     "n": 1,
+     "set": "coin=300",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, cancel=1",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "cancel=0, coin=700",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, select=1",
+     "expect": "dispense=false"
+    }
+   ]
+  },
+  {
+   "name": "Cheaper price: price=300",
+   "steps": [
+    {
+     "n": 0,
+     "set": "price=300",
+     "expect": "dispense=false",
+     "init": true
+    },
+    {
+     "n": 1,
+     "set": "coin=300",
+     "expect": "dispense=false"
+    },
+    {
+     "n": 1,
+     "set": "coin=0, select=1",
+     "expect": "dispense=true"
+    }
+   ]
+  }
  ]
 }

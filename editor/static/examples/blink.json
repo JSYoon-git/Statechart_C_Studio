@@ -135,5 +135,79 @@
     }
    }
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Blinks every 50 calls (0.5 s)",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "led=false"
+    },
+    {
+     "n": 49,
+     "set": "",
+     "expect": "led=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "led=true"
+    },
+    {
+     "n": 49,
+     "set": "",
+     "expect": "led=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "led=false"
+    },
+    {
+     "n": 50,
+     "set": "",
+     "expect": "led=true"
+    }
+   ]
+  },
+  {
+   "name": "X_Init with another config value: blinkTicks=5",
+   "steps": [
+    {
+     "n": 0,
+     "set": "blinkTicks=5",
+     "expect": "led=false",
+     "init": true
+    },
+    {
+     "n": 4,
+     "set": "",
+     "expect": "led=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "led=true"
+    }
+   ]
+  },
+  {
+   "name": "X_Init puts the LED back to off",
+   "steps": [
+    {
+     "n": 50,
+     "set": "",
+     "expect": "led=true"
+    },
+    {
+     "n": 0,
+     "set": "",
+     "expect": "led=false",
+     "init": true
+    }
+   ]
+  }
  ]
 }

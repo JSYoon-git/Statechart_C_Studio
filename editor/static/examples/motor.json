@@ -392,5 +392,198 @@
    },
    "ioStyle": "struct"
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Controller: start request, running, stop",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "Controller.runCmd=false"
+    },
+    {
+     "n": 1,
+     "set": "Controller.startCmd=1",
+     "expect": "Controller.runCmd=true, Controller.targetRpm=1500"
+    },
+    {
+     "n": 1,
+     "set": "Controller.startCmd=0, Controller.atSpeed=1",
+     "expect": "Controller.runCmd=true"
+    },
+    {
+     "n": 1,
+     "set": "Controller.stopCmd=1",
+     "expect": "Controller.runCmd=false"
+    }
+   ]
+  },
+  {
+   "name": "Controller: the motor never reaches speed -> fault, run command off",
+   "steps": [
+    {
+     "n": 1,
+     "set": "Controller.startCmd=1",
+     "expect": "Controller.runCmd=true"
+    },
+    {
+     "n": 299,
+     "set": "Controller.startCmd=0",
+     "expect": "Controller.runCmd=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "Controller.runCmd=false"
+    },
+    {
+     "n": 1,
+     "set": "Controller.stopCmd=1",
+     "expect": "Controller.runCmd=false"
+    }
+   ]
+  },
+  {
+   "name": "Motor: ramps 300 rpm every 10 calls up to the target",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "Motor.rpm=0, Motor.atSpeed=false"
+    },
+    {
+     "n": 1,
+     "set": "Motor.run=1, Motor.target=1000",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 10,
+     "set": "",
+     "expect": "Motor.rpm=300"
+    },
+    {
+     "n": 10,
+     "set": "",
+     "expect": "Motor.rpm=600"
+    },
+    {
+     "n": 10,
+     "set": "",
+     "expect": "Motor.rpm=900"
+    },
+    {
+     "n": 10,
+     "set": "",
+     "expect": "Motor.rpm=1000, Motor.atSpeed=true"
+    }
+   ]
+  },
+  {
+   "name": "Motor: a jam holds the ramp, then it goes on",
+   "steps": [
+    {
+     "n": 1,
+     "set": "Motor.run=1, Motor.target=1000",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 5,
+     "set": "",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 20,
+     "set": "Motor.jam=1",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 1,
+     "set": "Motor.jam=0",
+     "expect": "Motor.rpm=300"
+    }
+   ]
+  },
+  {
+   "name": "Motor: run off stops it",
+   "steps": [
+    {
+     "n": 1,
+     "set": "Motor.run=1, Motor.target=1000",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 11,
+     "set": "",
+     "expect": "Motor.rpm=300"
+    },
+    {
+     "n": 1,
+     "set": "Motor.run=0",
+     "expect": "Motor.rpm=0, Motor.atSpeed=false"
+    }
+   ]
+  },
+  {
+   "name": "Both modules, wired by hand (runCmd -> run, targetRpm -> target, atSpeed -> atSpeed)",
+   "steps": [
+    {
+     "n": 1,
+     "set": "Controller.startCmd=1",
+     "expect": "Controller.runCmd=true, Controller.targetRpm=1500"
+    },
+    {
+     "n": 1,
+     "set": "Controller.startCmd=0, Motor.run=1, Motor.target=1500",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 40,
+     "set": "",
+     "expect": "Motor.rpm=1200"
+    },
+    {
+     "n": 10,
+     "set": "",
+     "expect": "Motor.rpm=1500, Motor.atSpeed=true"
+    },
+    {
+     "n": 1,
+     "set": "Controller.atSpeed=1",
+     "expect": "Controller.runCmd=true"
+    },
+    {
+     "n": 1,
+     "set": "Controller.stopCmd=1, Motor.run=0",
+     "expect": "Controller.runCmd=false, Motor.rpm=0"
+    }
+   ]
+  },
+  {
+   "name": "Motor: faster ramp with rampTicks=2, rpmStep=500",
+   "steps": [
+    {
+     "n": 0,
+     "set": "Motor.rampTicks=2, Motor.rpmStep=500",
+     "expect": "Motor.rpm=0",
+     "init": true
+    },
+    {
+     "n": 1,
+     "set": "Motor.run=1, Motor.target=1000",
+     "expect": "Motor.rpm=0"
+    },
+    {
+     "n": 2,
+     "set": "",
+     "expect": "Motor.rpm=500"
+    },
+    {
+     "n": 2,
+     "set": "",
+     "expect": "Motor.rpm=1000"
+    }
+   ]
+  }
  ]
 }

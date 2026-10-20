@@ -199,5 +199,133 @@
     }
    }
   }
+ ],
+ "scenarios": [
+  {
+   "name": "A stable press is confirmed after 2 calls",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 1,
+     "set": "raw=0",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 2,
+     "set": "",
+     "expect": "pressed=false"
+    }
+   ]
+  },
+  {
+   "name": "A short bounce is ignored",
+   "steps": [
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "raw=0",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=true"
+    }
+   ]
+  },
+  {
+   "name": "A glitch while pressed is ignored",
+   "steps": [
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 2,
+     "set": "",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 1,
+     "set": "raw=0",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 1,
+     "set": "raw=0",
+     "expect": "pressed=true"
+    },
+    {
+     "n": 2,
+     "set": "",
+     "expect": "pressed=false"
+    }
+   ]
+  },
+  {
+   "name": "Faster debounce: debounceTicks=1",
+   "steps": [
+    {
+     "n": 0,
+     "set": "debounceTicks=1",
+     "expect": "pressed=false",
+     "init": true
+    },
+    {
+     "n": 1,
+     "set": "raw=1",
+     "expect": "pressed=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "pressed=true"
+    }
+   ]
+  }
  ]
 }

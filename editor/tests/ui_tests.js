@@ -387,15 +387,15 @@ export async function run() {
       if (!text.includes(f)) throw new Error("zip lacks " + f);
     for (const f of ["sim_main.c", "RiCLite", "ut.h", "test_Default.c", ".obj"]) if (text.includes(f)) throw new Error("zip contains " + f);
   });
-  await T("Build: 컴파일 성공 (/W4 경고 없음) → 버튼 ✓, Simulate·Unit Test·Variables 화면 없음", async () => {
+  await T("Build: 컴파일 성공 (/W4 경고 없음) → 버튼 ✓, 예전 Unit Test·Variables 화면은 없음 (Simulation·Scenario 탭은 새 구현)", async () => {
     const keep = JSON.stringify(project), keepCur = cur;
     try {
       W.loadProject(await (await fetch("examples/blink.json")).json());    // a known, correct chart (earlier tests leave stray connectors)
       if (!(await W.build())) throw new Error("build failed: " + probs().join(" | "));
       if (!$("bCompile").classList.contains("ok")) throw new Error("no ✓ after a clean build");
     } finally { W.loadProject(JSON.parse(keep)); cur = keepCur; W.refreshAll(); }
-    for (const id of ["bBuild", "tab-sim", "tab-ut", "tab-vars", "simLog", "utEdit", "varTable"]) if ($(id)) throw new Error(id + " still there");
-    if (document.querySelector('#tabs [data-tab="sim"], #tabs [data-tab="ut"], #tabs [data-tab="vars"]')) throw new Error("removed tab still in the tab bar");
+    for (const id of ["bBuild", "tab-ut", "tab-vars", "simLog", "utEdit", "varTable"]) if ($(id)) throw new Error(id + " still there");
+    if (document.querySelector('#tabs [data-tab="ut"], #tabs [data-tab="vars"]')) throw new Error("removed tab still in the tab bar");
   });
   await T("추적: 같은 두 상태 사이 전이 2개 (Lamp: [button == true] / [forceOff == true]) → 각자 자기 블록", async () => {
     const keep = JSON.stringify(project), keepCur = cur;
@@ -607,6 +607,53 @@ export async function run() {
     eq([NT().t2.x - a[4], NT().t2.y - a[5]], [0, 0], "other note stayed");
     W.undo();
     eq([NT().t1.x, NT().t1.y], [a[2], a[3]], "undo brings the note back too");
+  });
+
+  // ---- scenario tab (SQA pass 2026-10-21)
+  await T("새 프로젝트를 열면 코드 창이 이전 프로젝트의 코드를 보여 주지 않는다", async () => {
+    W.loadProject(await (await fetch("examples/blink.json")).json());
+    W.showFiles({ pkg: "Blink", files: { "Led.c": "int old;" }, warnings: [] });
+    if (!$("code").innerText.includes("old")) throw new Error("setup: code not shown");
+    W.loadProject(W.blankProject());
+    if ($("code").innerText.includes("old") || $("fileTabs").children.length) throw new Error("stale code still on screen: " + $("code").innerText.slice(0, 40));
+  });
+  await T("Scenario 탭: 빌드 전에는 잠겨 있고(🔒), 빌드가 성공한 그림에서만 열린다", async () => {
+    W.loadProject(W.blankProject());
+    if (!$("scTabBtn").disabled || !$("scTabBtn").textContent.includes("🔒")) throw new Error("blank project: tab should be locked");
+  });
+  await T("시나리오 Expect에는 State·내부 변수가 칩으로 못 들어온다 (출력만)", async () => {
+    W.loadProject(await (await fetch("examples/blink.json")).json());
+    const meta = W.scMeta();
+    const chips = W.scParseExpect("LED_ON, cnt=1, led=true", meta);
+    eq(chips.map((c) => !!c.bad), [true, true, false], "state and internal variable are rejected, the output is kept");
+    eq(W.scWriteExpect(chips, meta), "LED_ON, cnt=1, led=true", "nothing is lost when written back");
+  });
+  await T("시나리오 Set 값 범위: C가 조용히 자르는 값은 경고 (bool, uint8_t ...)", async () => {
+    if (W.scRange("uint8_t", "200") !== null) throw new Error("200 fits uint8_t");
+    if (!W.scRange("uint8_t", "300")) throw new Error("300 must not fit uint8_t");
+    if (!W.scRange("bool", "5")) throw new Error("5 must not be a bool");
+    if (W.scRange("bool", "true") !== null) throw new Error("true is a bool");
+    if (!W.scRange("int16_t", "1.5")) throw new Error("1.5 is not whole");
+  });
+  await T("변수 이름을 바꾸면 시나리오가 따라간다 (Set·Expect), 다른 변수는 그대로", async () => {
+    W.loadProject(await (await fetch("examples/button_lamp.json")).json());
+    W.scRenameVar("Lamp", "lamp", "light");
+    const all = project.scenarios.flatMap((x) => x.steps.map((st) => st.set + " | " + st.expect)).join(String.fromCharCode(10));
+    if (/\blamp\b/.test(all)) throw new Error("old name left in a scenario");
+    if (!/light=true/.test(all) || !/button=1/.test(all)) throw new Error("new name missing or other names changed: " + all.slice(0, 120));
+  });
+  await T("시나리오 표: Calls는 0~100000으로 제한, 복제·삭제가 동작한다", async () => {
+    W.loadProject(await (await fetch("examples/button_lamp.json")).json());
+    scSel = 0; W.scBuild();
+    const calls = $("tab-scenario").querySelector("tr[data-step] input.scn");
+    calls.value = "-5"; calls.dispatchEvent(new Event("input", { bubbles: true }));
+    eq([calls.value, W.scCur().steps[0].n], ["0", 0], "negative clamps to 0");
+    calls.value = "999999"; calls.dispatchEvent(new Event("input", { bubbles: true }));
+    eq(calls.value, "100000", "limit");
+    const n0 = W.scList().length, c0 = W.confirm; W.confirm = () => true;
+    W.scDupScenario(); eq(W.scList().length, n0 + 1, "duplicate");
+    W.scDelScenario(); eq(W.scList().length, n0, "delete");
+    W.confirm = c0;
   });
 
   W.alert = origAlert; W.confirm = origConfirm;

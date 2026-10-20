@@ -7,6 +7,10 @@ Serves the web editor (static/) and a small JSON API:
   POST /api/generate   {project}         -> {pkg, files: {name: text}, warnings}
   GET  /api/zip?pkg=X                    -> zip of the last generated sources
   POST /api/build      {project}         -> generate + compile every .c (MSVC /W4) -> {ok, log, ...}
+  POST /api/sim/start  {project}         -> generated modules + test harness built and run -> {sid, meta, snaps, logs}
+  POST /api/sim/step   {sid, n, inputs}  -> n task calls with these inputs -> {snaps, logs}
+  POST /api/sim/scenario {sid, steps}    -> reset, play the step table, check it -> {start, results, ok}
+  POST /api/sim/reset  {sid}  /  POST /api/sim/stop {sid}
   GET  /api/projects                     -> saved project names
   GET  /api/project?name=X               -> project JSON
   POST /api/project    {name, project}   -> save
@@ -30,7 +34,9 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "codegen"))
 
 from model import load_editor  # noqa: E402
-from task_c import TARGET_MAIN, generate  # noqa: E402
+from task_c import TARGET_MAIN, TaskGen, generate  # noqa: E402
+from sim_c import DONE, SNAP, sim_main  # noqa: E402
+import sim  # noqa: E402
 
 STATIC = os.path.join(HERE, "static")
 OUT = os.path.join(HERE, "out")
@@ -98,7 +104,17 @@ def do_build(out):
     return r.returncode == 0, log
 
 
+def sim_start(project):
+    pkg, out, files, warnings = do_generate(project)
+    text, meta = sim_main(pkg, [TaskGen(pkg, c) for c in pkg.classes])
+    r = sim.start(out, files, text, meta, find_vcvars(), TARGET_MAIN, DONE, SNAP)
+    r["warnings"] = warnings
+    return r
+
+
 class Handler(SimpleHTTPRequestHandler):
+    wbufsize = 65536            # headers + body leave in one segment (separate writes cost ~200 ms on Windows: Nagle + delayed ACK)
+
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=STATIC, **kw)
 
@@ -170,6 +186,18 @@ class Handler(SimpleHTTPRequestHandler):
                 pkg, out, files, warnings = do_generate(self.body())
                 ok, log = do_build(out)
                 return self.send_json({"ok": ok, "log": log, "pkg": pkg.name, "files": files, "warnings": warnings})
+            if u.path == "/api/sim/start":
+                return self.send_json(sim_start(self.body()))
+            if u.path == "/api/sim/step":
+                b = self.body()
+                return self.send_json(sim.step(b.get("sid"), b.get("n", 1), b.get("inputs")))
+            if u.path == "/api/sim/scenario":
+                b = self.body()
+                return self.send_json(sim.run_scenario(b.get("sid"), b.get("steps")))
+            if u.path == "/api/sim/reset":
+                return self.send_json(sim.reset(self.body().get("sid")))
+            if u.path == "/api/sim/stop":
+                return self.send_json(sim.stop(self.body().get("sid")))
             if u.path == "/api/project":
                 b = self.body()
                 name = str(b.get("name", ""))
@@ -190,6 +218,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8770)
     a = ap.parse_args()
+    sim.cleanup()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     print(f"statechart editor: http://127.0.0.1:{a.port}/", flush=True)
     srv.serve_forever()

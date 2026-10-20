@@ -14,6 +14,10 @@ prices, speeds) is a config value: a parameter of X_Init, set from main.c, never
 """
 import json
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from scenarios import SCENARIOS  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static", "examples")
 
@@ -53,6 +57,7 @@ class Project:
         return c
 
     def save(self, fn):
+        self.d["scenarios"] = SCENARIOS.get(fn, [])       # unit-test step tables (scenarios.py)
         with open(os.path.join(OUT, fn), "w", encoding="utf-8") as f:
             json.dump(self.d, f, indent=1, ensure_ascii=False)
 
@@ -302,11 +307,12 @@ def motor():
 def modem():
     p = Project("Modem")
     c = p.cls("Modem", [inp("connectOk"), inp("connectFail"), inp("data", "uint16_t", "0"),
-                        inp("hangup"), out("online"), cfg("maxRetries", "3", "int"), cfg("answerTimeoutTicks", "200u"),
+                        inp("hangup"), out("online"), out("dialing"), out("gaveUp"), cfg("maxRetries", "3", "int"), cfg("answerTimeoutTicks", "200u"),
                         cfg("retryDelayTicks", "100u"), v("int", "retries", "0"), v("int", "bytes", "0"), v("uint16_t", "cnt", "0")],
               io_style="struct")
     c.state("dial", "DIALING", 80, 100, 160, 70,
-            entry='cnt = 0;\nretries++;\nprintf("연결 시도 %d/%d\\n", retries, maxRetries);', reactions=[("", CNT)])
+            entry='cnt = 0;\nretries++;\ndialing = true;\nprintf("연결 시도 %d/%d\\n", retries, maxRetries);',
+            exit="dialing = false;", reactions=[("", CNT)])
     c.state("wait", "WAIT_RETRY", 60, 380, 160, 70, entry='cnt = 0;\nprintf("1초 후 다시 시도\\n");', reactions=[("", CNT)])
     c.state("on", "ONLINE", 460, 100, 170, 70, entry='online = true;\nprintf("연결됨\\n");\nretries = 0;',
             exit="online = false;",
@@ -318,7 +324,7 @@ def modem():
     c.edge("dial", "j", guard="connectFail == true", bend=-25)
     c.edge("dial", "j", guard="cnt >= answerTimeoutTicks", bend=25)   # no answer within 2 s counts as a failure too
     c.edge("j", "wait", guard="retries < maxRetries")
-    c.edge("j", "x", guard="else", action='printf("3번 실패 - 포기합니다\\n");')
+    c.edge("j", "x", guard="else", action='gaveUp = true;\nprintf("3번 실패 - 포기합니다\\n");')
     c.edge("wait", "dial", guard="cnt >= retryDelayTicks", bend=-30)
     c.edge("on", "dial", guard="hangup == true", action='printf("끊김 - 다시 연결\\n");', bend=50)
     c.note("t1", 700, 90, 250, 90,

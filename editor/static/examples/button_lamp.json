@@ -131,5 +131,108 @@
     }
    }
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Button switches the lamp",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 1,
+     "set": "button=0",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "button=0",
+     "expect": "lamp=false"
+    }
+   ]
+  },
+  {
+   "name": "A held button toggles on every call",
+   "steps": [
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 1,
+     "set": "button=0",
+     "expect": "lamp=true"
+    }
+   ]
+  },
+  {
+   "name": "forceOff keeps the lamp off",
+   "steps": [
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 1,
+     "set": "button=0, forceOff=1",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "button=0, forceOff=0",
+     "expect": "lamp=false"
+    },
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=true"
+    }
+   ]
+  },
+  {
+   "name": "X_Init puts the lamp back to off",
+   "steps": [
+    {
+     "n": 1,
+     "set": "button=1",
+     "expect": "lamp=true"
+    },
+    {
+     "n": 0,
+     "set": "",
+     "expect": "lamp=false",
+     "init": true
+    }
+   ]
+  }
  ]
 }

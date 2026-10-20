@@ -407,3 +407,154 @@ button.danger { color: var(--err); }
 #bTour { font-weight: 700; width: 30px; padding: 0; }
 
 .pseudo.k-init.sel .fill { fill: var(--sel); }
+
+/* ---- simulation tab ---- */
+#bSim { margin-left: 4px; }
+#tab-sim { overflow: auto; }
+.simbar { display: flex; gap: 6px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.simbar .grow { flex: 1; }
+.simbar .simn { width: 58px; padding: 1px 4px; }
+.simbar .simspeed { padding: 1px 2px; }
+.simcount { color: var(--dim); font-variant-numeric: tabular-nums; font-size: 12px; }
+.simbody { display: flex; gap: 0; flex: 1; min-height: 0; overflow: hidden; }
+.simcol { flex: 0 0 230px; padding: 6px 12px; overflow: auto; border-right: 1px solid var(--line); min-width: 0; }
+.simcol.wide { flex: 1; border-right: none; }
+.simcol h4 { margin: 4px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+.simcls { font-weight: 600; margin: 6px 0 2px; }
+.simnone { color: var(--dim); font-size: 12px; font-style: italic; }
+.simrow { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; }
+.simrow .n { flex: 1; font-family: Consolas, monospace; overflow: hidden; text-overflow: ellipsis; }
+.simrow input.simval { width: 80px; padding: 1px 4px; }
+.simrow .pulse { padding: 0 6px; }
+.simsub { margin: 8px 0 2px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+.simchips { display: flex; flex-wrap: wrap; gap: 4px; min-height: 22px; }
+.chip { background: var(--active-fill); border: 1px solid var(--active-stroke); color: var(--text); border-radius: 10px; padding: 1px 9px; font-size: 12px; font-weight: 600; }
+.simtable { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; font-family: Consolas, monospace; font-size: 12px; }
+.simtable .n { color: var(--dim); overflow: hidden; text-overflow: ellipsis; }
+.simtable .v { text-align: right; font-variant-numeric: tabular-nums; }
+.simtable .v.chg { background: #fde68a; color: #1d2330; border-radius: 3px; }
+.simtrace { font-family: Consolas, monospace; font-size: 12px; max-height: 140px; overflow: auto; margin-bottom: 4px; }
+.simtrace .tr { display: flex; gap: 8px; padding: 1px 0; flex-wrap: wrap; }
+.simtrace .t { color: var(--dim); min-width: 44px; }
+.simtrace .c { color: var(--accent); }
+.simtrace .ent { color: var(--active-stroke); font-weight: 600; }
+.simtrace .left { color: #b91c1c; }
+.simtrace .o { color: var(--text); }
+.simconsole { margin: 0; font-family: Consolas, monospace; font-size: 12px; background: var(--code-bg); color: var(--code-fg); padding: 6px 8px; border-radius: 4px; min-height: 40px; max-height: 110px; overflow: auto; white-space: pre-wrap; }
+.simmsg { padding: 14px 18px; color: var(--dim); max-width: 760px; }
+.simmsg.err { color: var(--err); }
+.simmsg pre { background: var(--code-bg); color: var(--code-fg); padding: 8px; border-radius: 4px; overflow: auto; max-height: 160px; }
+.simstale { background: #fef3c7; color: #92400e; padding: 4px 12px; font-size: 12px; border-bottom: 1px solid #f59e0b; }
+.simstale[hidden] { display: none; }
+button.primary.busy#bSim { pointer-events: none; }
+
+/* ---- scenario tab ---- */
+.scsel { max-width: 260px; }
+.scname { width: 200px; padding: 1px 6px; }
+.scsum { font-size: 12px; font-weight: 600; margin-left: 6px; }
+.scsum.ok { color: #15803d; } .scsum.bad { color: #b91c1c; } .scsum.stale { opacity: .5; }
+.scall { color: var(--dim); font-size: 12px; }
+button.primary-ish { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.primary-ish:disabled { background: #cbd5e1; border-color: #cbd5e1; cursor: not-allowed; }
+.scwrap { overflow: auto; flex: 1; min-height: 0; padding: 0 10px 8px; }
+.sctable { border-collapse: collapse; width: 100%; font-size: 12px; }
+.sctable th { text-align: left; color: var(--dim); font-weight: 600; padding: 4px 6px; position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+.sctable td { padding: 2px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.sctable input { width: 100%; box-sizing: border-box; padding: 2px 5px; font-family: Consolas, monospace; font-size: 12px; }
+.sctable input.scn { width: 54px; }
+.sctable td.scidx { color: var(--dim); text-align: right; width: 26px; }
+.sctable td.scres { width: 74px; font-weight: 700; white-space: nowrap; }
+.sctable td.sctools { white-space: nowrap; width: 90px; }
+.sctable tr.pass td.scres { color: #15803d; }
+.sctable tr.fail td.scres { color: #b91c1c; }
+.sctable tr.fail { background: #fef2f2; }
+.sctable tr.pass { background: #f0fdf4; }
+.sctable tr.stale { opacity: .55; }
+.sctable tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sctable tr.scmsg td { color: #b91c1c; font-family: Consolas, monospace; padding: 2px 8px 4px 40px; background: #fef2f2; }
+.schint { color: var(--dim); font-size: 12px; padding: 6px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+#tabs button:disabled { opacity: .4; cursor: not-allowed; }
+.sctable td.scinitc { width: 34px; text-align: center; }
+.sctable input.scinit { width: auto; }
+
+/* scenario chips */
+.scchips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; min-height: 24px; }
+.scchip { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 0 3px 0 8px; font-size: 12px; line-height: 20px; }
+.scchip.val { border-color: #93c5fd; background: #eff6ff; }
+.scchip.val.cfg { border-color: #fdba74; background: #fff7ed; }
+.scchip.val.warn { border-color: #dc2626; background: #fef2f2; }
+.scchip.state { padding-left: 2px; border-color: var(--active-stroke); background: var(--active-fill); }
+.scchip.bad { border-color: #dc2626; background: #fef2f2; color: #b91c1c; font-family: Consolas, monospace; }
+.scchip .scname2 { font-family: Consolas, monospace; }
+.scchip .scop { color: var(--dim); }
+.scchip .scopsel { font-size: 12px; padding: 0 1px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+.scchip input.scval.num { width: 64px; padding: 0 3px; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.sctable input.scval.num { width: 64px; }
+.scchip button.scval.toggle { border: none; border-radius: 9px; padding: 0 8px; font-size: 12px; font-weight: 600; cursor: pointer; line-height: 18px; }
+.scchip button.scval.toggle.on { background: #16a34a; color: #fff; }
+.scchip button.scval.toggle.off { background: #cbd5e1; color: #1d2330; }
+.scchip button.scstate { border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 600; padding: 0 6px; font-family: Consolas, monospace; }
+.scchip button.scstate.neg { color: #b91c1c; text-decoration: line-through; }
+.scchip .scx { border: none; background: none; color: var(--dim); cursor: pointer; padding: 0 4px; font-size: 11px; }
+.scchip .scx:hover { color: #b91c1c; }
+.scadd { border: 1px dashed var(--line); background: none; color: var(--accent); border-radius: 12px; cursor: pointer; padding: 0 9px; line-height: 20px; font-size: 13px; }
+.scadd:hover { background: var(--accent-soft); }
+.scmenu { position: fixed; z-index: 100; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.18); max-height: 280px; overflow: auto; min-width: 190px; padding: 3px 0; }
+.scmenu .mhead { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; padding: 5px 10px 2px; }
+.scmenu .mitem { display: flex; justify-content: space-between; gap: 14px; width: 100%; border: none; background: none; text-align: left; padding: 3px 10px; cursor: pointer; font-family: Consolas, monospace; font-size: 12px; color: var(--text); }
+.scmenu .mitem:hover { background: var(--accent-soft); }
+.scmenu .tag { color: var(--dim); font-family: inherit; }
+.scmenu .mnone { padding: 6px 10px; color: var(--dim); font-size: 12px; font-style: italic; }
+
+.sctable tr.next { outline: 2px dashed var(--accent); outline-offset: -2px; }
+
+/* ---- scenario panel, second pass (compact, calmer, clearer) ---- */
+.scbar { gap: 4px; }
+.scbar .scsel { flex: 0 1 300px; min-width: 120px; font-weight: 600; }
+.scbar .scname { flex: 0 1 300px; min-width: 120px; padding: 2px 6px; }
+.scbar .scsum { margin-left: 8px; }
+.scbar .scstatus { color: var(--dim); font-size: 12px; font-style: italic; margin-right: 6px; }
+.scbar button.mini { min-width: 26px; }
+.scbar button:disabled { opacity: .4; cursor: not-allowed; }
+.scbar button.primary-ish:disabled { opacity: 1; }
+.sctable th { padding: 3px 6px; }
+.sctable td { padding: 1px 4px; }
+.sctable td.sccalls { white-space: nowrap; width: 150px; }
+.sctable td.sccalls .sctime { color: var(--dim); font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.sctable td.sctools { width: 112px; text-align: right; }
+.sctable td.sctools button { opacity: 0; transition: opacity .12s; }
+.sctable tr:hover td.sctools button, .sctable tr.sel td.sctools button, .sctable td.sctools button:focus { opacity: 1; }
+.sctable td.sctools button:disabled { opacity: 0; }
+.sctable tr.scaddrow td { border-bottom: none; padding: 6px 4px; }
+.sctable tr.scaddrow button { border-style: dashed; color: var(--accent); background: none; }
+.sctable tr:not(.scaddrow):not(.scmsg):hover { background: #f8fafc; }
+.sctable tr.pass:hover { background: #ecfdf3; }
+.sctable td.scres { font-size: 12px; }
+.scchip .scname2 .cls { color: var(--dim); }
+.scchip .scopsel { appearance: none; -webkit-appearance: none; border-color: transparent; background: transparent; padding: 0 2px; text-align: center; cursor: pointer; font-weight: 700; }
+.scchip .scopsel:hover { background: #fff; border-color: var(--line); }
+.scchip.warn { border-color: #dc2626; background: #fef2f2; }
+.scchip.warn input.scval.num { border-color: #dc2626; }
+.scempty { max-width: 520px; margin: 28px auto; text-align: center; color: var(--dim); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.scempty .t { font-size: 15px; font-weight: 600; color: var(--text); }
+#scTabBtn:disabled { opacity: .55; }
+
+/* ---- fixed columns (chips never make the table jump), toolbar on one line, tab hint ---- */
+.sctable { table-layout: fixed; }
+.sctable th:nth-child(1) { width: 28px; }
+.sctable th:nth-child(2) { width: 44px; }
+.sctable th:nth-child(3) { width: 148px; }
+.sctable th:nth-child(6) { width: 84px; }
+.sctable th:nth-child(7) { width: 116px; }
+.sctable td { overflow: visible; }
+.scbar { flex-wrap: nowrap; }
+.scbar .scsel { flex: 1 1 140px; min-width: 100px; max-width: 300px; }
+.scbar .scname { flex: 1 1 140px; min-width: 100px; max-width: 300px; }
+.scbar .scsum { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.scbar .scstatus { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.scbar .grow { flex: 1 1 0; min-width: 0; }
+.scbar button { flex: none; white-space: nowrap; }
+#scTabBtn.hint::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; animation: scpulse 1.6s ease-in-out infinite; }
+@keyframes scpulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { #scTabBtn.hint::after { animation: none; } }

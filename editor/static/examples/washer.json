@@ -314,5 +314,98 @@
    },
    "ioStyle": "struct"
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Full wash cycle: 900 calls with the motor running",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "motor=false, valve=false"
+    },
+    {
+     "n": 1,
+     "set": "start=1",
+     "expect": "motor=true, valve=true"
+    },
+    {
+     "n": 199,
+     "set": "start=0",
+     "expect": "motor=true, valve=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "motor=true, valve=false"
+    },
+    {
+     "n": 699,
+     "set": "",
+     "expect": "motor=true, valve=false"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "motor=false, valve=false"
+    }
+   ]
+  },
+  {
+   "name": "Pause and resume goes back into the same step",
+   "steps": [
+    {
+     "n": 1,
+     "set": "start=1",
+     "expect": "motor=true, valve=true"
+    },
+    {
+     "n": 250,
+     "set": "start=0",
+     "expect": "motor=true, valve=false"
+    },
+    {
+     "n": 1,
+     "set": "pause=1",
+     "expect": "motor=false, valve=false"
+    },
+    {
+     "n": 100,
+     "set": "pause=0",
+     "expect": "motor=false, valve=false"
+    },
+    {
+     "n": 1,
+     "set": "resume=1",
+     "expect": "motor=true, valve=false"
+    }
+   ]
+  },
+  {
+   "name": "Short fill: fillTicks=5",
+   "steps": [
+    {
+     "n": 0,
+     "set": "fillTicks=5",
+     "expect": "valve=false",
+     "init": true
+    },
+    {
+     "n": 1,
+     "set": "start=1",
+     "expect": "valve=true"
+    },
+    {
+     "n": 4,
+     "set": "start=0",
+     "expect": "valve=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "valve=false"
+    }
+   ]
+  }
  ]
 }

@@ -164,5 +164,68 @@
     }
    }
   }
+ ],
+ "scenarios": [
+  {
+   "name": "One full cycle: red 300, green 250, yellow 100 calls",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "color=0"
+    },
+    {
+     "n": 299,
+     "set": "",
+     "expect": "color=0"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "color=1"
+    },
+    {
+     "n": 249,
+     "set": "",
+     "expect": "color=1"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "color=2"
+    },
+    {
+     "n": 99,
+     "set": "",
+     "expect": "color=2"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "color=0"
+    }
+   ]
+  },
+  {
+   "name": "Shorter red: redTicks=10",
+   "steps": [
+    {
+     "n": 0,
+     "set": "redTicks=10",
+     "expect": "color=0",
+     "init": true
+    },
+    {
+     "n": 9,
+     "set": "",
+     "expect": "color=0"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "color=1"
+    }
+   ]
+  }
  ]
 }

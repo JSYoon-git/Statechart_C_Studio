@@ -214,6 +214,7 @@ def build_machine(chart, events):
         if n.get("kind") == "state":
             st[nid] = State(n.get("name") or nid, entry=n.get("entry", ""), exit=n.get("exit", ""),
                             is_and=bool(n.get("and")))
+            st[nid].node_id = nid            # lets the simulator map a C state back to the drawing
 
     def container(n):
         pid = n.get("parent")

@@ -120,6 +120,7 @@
   <nav id="tabs">
     <button data-tab="code" class="on">Code</button>
     <button data-tab="problems">Problems <span id="probCount"></span></button>
+    <button data-tab="scenario" id="scTabBtn" title="Unit test: a step table (inputs, expected states and values) that runs against the simulation">Scenario</button>
     <span class="grow"></span>
     <button id="bottomToggle" title="Hide / show the bottom panel">▴</button>
   </nav>
@@ -136,10 +137,14 @@
     <pre id="code"><span class="dim" data-i18n>Press Generate C to see the generated code here.</span></pre>
   </div>
   <div id="tab-problems" class="tab"><ul id="problems"></ul></div>
+  <div id="tab-scenario" class="tab"></div>
 </section>
 <script src="i18n.js"></script>
 <script src="layout.js"></script>
 <script src="backend.js"></script>
+<script src="scchips.js"></script>
 <script src="editor.js"></script>
+<script src="sim.js"></script>
+<script src="scenario.js"></script>
 </body>
 </html>

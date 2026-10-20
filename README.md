@@ -33,6 +33,8 @@ I hope the juniors who come after me will give it a try.
 4. Change the drawing: the button turns blue again. Generate and build again until it turns green.
 5. Open **New ▾** and try the next example. They go from beginner to advanced (see below).
 6. Add **notes** (the ✎ tool) to explain your own drawing. **Save** keeps your work as a file on your computer.
+7. Once Build is green, the **Scenario** tab unlocks: write a unit test as a table and run it against the real
+   generated C (needs the local server, see below).
 
 The generated code is two files, `X.c` and `X.h`. Copy them into an MCU project and call two functions from
 the 10 ms task you already have:
@@ -57,6 +59,20 @@ int main(void) {
 There is no framework: no event queue, no timers, no macros. Transitions have only a **[guard]**, written in plain C.
 An "event" is just an input variable that a guard reads. The generated code is C89 (ANSI C), so it builds on
 old and small MCU compilers too.
+
+## Scenarios: a unit test as a table
+
+A scenario is a table. Every row is one step: optionally call `X_Init` again, set some **inputs**, run some 10 ms task
+calls, then say what the **outputs** must be. Pick everything from menus (no typing of names).
+
+- **Run** executes the selected scenario one row per press, so you decide when to go on; the row is marked
+  PASS / FAIL and the active states light up on the drawing. **Run all** plays every scenario.
+- A scenario only uses what the outside world sees: inputs go in, outputs come out. States and internal variables
+  stay inside the chart (the drawing already shows the states).
+- The scenarios run the **generated C itself** (compiled with a small test harness), not a copy of its logic.
+  That needs a C compiler on your computer, so it works with the local server (`python editor/server.py`),
+  not on the online page. The online page still lets you read the examples' scenarios.
+- All examples come with scenarios. Renaming a variable in the drawing renames it in the scenarios too.
 
 ## Examples
 
@@ -114,6 +130,7 @@ with any tool vendor.
 ```bash
 python editor/tests/test_codegen.py          # generated code and build checks
 python editor/tests/test_edge_cases.py       # 45 awkward drawings
+python editor/tests/test_sim.py              # the scenarios of every example, run against the real generated C
 python editor/tests/export_parity.py         # server results, to compare with the browser version
 ```
 

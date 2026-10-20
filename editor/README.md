@@ -133,3 +133,89 @@ QA 결과는 `tests/QA_REPORT.md`.
 - **구조 경고**: 연결 안 된 연결자(C/H/⊗), 들어오는 전이 없는 H, 같은 guard 두 개 등은 캔버스에 ⚠로 표시되고 Problems에 클릭 가능한 목록이 생기며, Generate/Build 전에 확인창이 뜹니다.
 - **연결자 모양**: 기본 전이 = 검은 점, **C** = 노란 마름모(조건), J = 청록 원, H = 파란 원, ⊗ = 빨간 원.
 - **Tidy(정리)**: 층(BFS / 최장경로) x 줄바꿈 폭 x 뒤집기 조합을 레이아웃하고, 열 안에서 교차·긴 수직 이동·상태 관통을 줄이는 국소 탐색으로 순서를 다듬은 뒤 점수가 가장 좋은 것을 고릅니다. 사용자의 그림이 이미 더 좋으면 그대로 둡니다. 비교용: `node tests/layout_bench.js` (복잡한 무작위 차트 30개 평균 점수 2541 -> 1794, 교차 9.8 -> 7.3).
+
+## Engine behind the scenarios (2026-10-20, 10-21)
+
+There is no manual simulation screen (removed on request: scenarios cover it). Running a scenario builds the
+*generated* `X.c` / `X.h` together with a separate harness (`codegen/sim_c.py` -> `sim_main.c`, never part of
+the user's module) into `sim.exe` and runs it as a child process of the server (`sim.py`). Every call of the
+10 ms task answers with the active states (`X_isIn`), the outputs as the caller got them and every other
+variable. The shown moment's active states light up on the drawing (green = leaf, outlined = composite).
+Needs the local server (not the GitHub Pages build). A hung user loop is killed after 10 s.
+API: `/api/sim/start|step|reset|stop|scenario`.
+
+## Scenarios = unit tests as step tables (2026-10-20)
+
+The **Scenario** tab holds step tables, stored in the project (`project.scenarios`). A step is one row:
+
+| column | meaning |
+|---|---|
+| Calls | 10 ms task calls (0 = only check) |
+| Set inputs | `button=1, coin=500` - changed before the calls; every input keeps its value until a later row changes it |
+| Expect | after the calls: `output=value` (also `!= >= <= > <`); `Class.name` with several classes. **Outputs only** |
+
+**Run** resets the simulation (X_Init) and plays the rows against the real generated C: PASS / FAIL per row
+(failures say what was found), click a row to see that moment on the drawing. **Run all** plays every scenario.
+Logic: `scenario.py` (server, `/api/sim/scenario`), UI: `static/scenario.js`.
+All 9 examples ship with scenarios (`examples_src/scenarios.py`, written into the example JSON by
+`build_examples.py`): 141 steps, all PASS. `python tests/test_sim.py` runs them and also checks that wrong
+expectations FAIL. Timing reminder: reactions (`cnt++`) run first, then one transition, so a state entered with
+`cnt = 0` and guard `[cnt >= N]` is left on the N-th call after it.
+
+### Init rows, unlocking, examples (2026-10-21)
+
+* **Init column**: a ticked row calls `X_Init` again before its calls (inputs and variables back to their
+  initial values). Only on such a row can `Set` give **config values** (X_Init parameters, e.g. `blinkTicks=5`);
+  elsewhere that is an error. Every scenario run starts with an implicit `X_Init` using the drawing's config values.
+* **Run** plays the selected scenario, **Run all** every scenario one after the other (each starts with X_Init, so they are independent).
+* The **Scenario tab is locked** until Generate C + Build succeeded for the drawing as it is now; any edit locks it again.
+* Opening an **example** (New menu / first start) generates and builds it at once (local server only), so the
+  buttons are green and the Scenario tab is unlocked.
+
+### Scenario cells are GUI (2026-10-21)
+
+*Set inputs* and *Expect* are chips, not text: `＋` opens a menu of the project's own variables / states
+(inputs, and config values on an Init row; states, outputs, variables). Bool = a true/false toggle, numbers = a
+number field (Expect also has `= != >= <= > <`), a state chip toggles "active" / "not active". The step still
+stores the plain text scenario.py reads (`static/scchips.js` parses it into chips and writes it back); an entry
+that no longer resolves stays as a red chip and is never lost.
+
+### Black-box rule (2026-10-21)
+
+A scenario drives the chart with **inputs only** (plus config values on an Init row) and checks **outputs only**.
+States and internal variables (`cnt`, counters, `credit` ...) can neither be set nor checked: the drawing already
+shows the active states while a scenario runs (click / step a row). The checker rejects them ("is not an output" /
+"write output=value"), the GUI menus do not offer them. Outputs are what the caller got from `X_Main`, so right
+after `X_Init` (0 calls) they still have their initial values - check an output after at least one call.
+The examples' scenarios check outputs only (timing is verified with the call counts: `49 calls: still X`,
+`1 call: now Y`); the modem example got two outputs (`dialing`, `gaveUp`) so its retry / give-up behaviour is visible.
+
+### Run (you step) / Run all, no notes (2026-10-21)
+
+* **Run** executes the *selected* scenario **one row per press** - nothing advances by itself. The first press runs row 1
+  (after `X_Init`), every further press the next row: the row is marked, its PASS / FAIL appears and the drawing shows
+  the states of that moment. The next row is outlined, the button shows the position (`Run 3 / 6`), `⟲` starts the
+  scenario over, and a press after the last row starts over too. (The server plays the whole table once; the editor
+  shows it row by row.)
+* **Run all** plays every scenario at once, one after the other (each starts with X_Init, so they do not affect each
+  other); the table on screen follows the scenario that is playing and ends on the first one that failed.
+* The Note column is gone (UI, project data, examples): a step is Init / Calls / Set inputs / Expect.
+
+### SQA pass of the scenario tab (2026-10-21)
+
+Found by using it from a blank project (drawing with the mouse, Build, writing a scenario) and fixed:
+
+* **Wrong / confusing**: the code pane kept the *previous* project's code after New; a build of the previous drawing
+  that finished late overwrote the screen of the project opened meanwhile (and the new project's auto build was
+  skipped); an edit of a variable name silently broke the scenarios; a Set value C would cut off (`uint8_t` 300, `bool` 5)
+  was accepted; Calls could be negative or above the 100000 limit; pressing Run threw the table scroll back to the top;
+  a row that has not run yet could be clicked and showed its future result; undo jumped to scenario 1; the state card
+  example text said `me->count++` while everything else says plain names.
+* **Design**: the tab shows its state (`🔒 Scenario` locked, a pulsing dot when unlocked and still empty, `✓` / `✗ n`
+  after a full run); one compact toolbar (scenario ▾ · ✎ rename · ⧉ duplicate · ＋ New · ✕ delete · Run · Run all);
+  fixed column widths (adding chips no longer moves the `＋` buttons); `Calls` shows its time (`49` = `490 ms`);
+  row tools appear on hover; a `＋ Add step` row at the end; failure text like `lamp: got false, expected true`;
+  empty menus say why (`There is no Output variable yet — add one under Variables ▸ Output`); the test build is prepared in
+  the background when the tab opens (first Run answers at once); opening the tab fits the drawing into the space left;
+  the properties card closes on Run so the lit-up states are visible.
+* Renaming a variable or class in the drawing renames it in the scenarios too (applied when the name field is left).

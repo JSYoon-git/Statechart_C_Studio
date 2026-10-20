@@ -40,6 +40,18 @@
      "dir": "out"
     },
     {
+     "type": "bool",
+     "name": "dialing",
+     "default": "false",
+     "dir": "out"
+    },
+    {
+     "type": "bool",
+     "name": "gaveUp",
+     "default": "false",
+     "dir": "out"
+    },
+    {
      "type": "int",
      "name": "maxRetries",
      "default": "3",
@@ -90,8 +102,8 @@
       "h": 70,
       "parent": null,
       "region": 0,
-      "entry": "cnt = 0;\nretries++;\nprintf(\"연결 시도 %d/%d\\n\", retries, maxRetries);",
-      "exit": "",
+      "entry": "cnt = 0;\nretries++;\ndialing = true;\nprintf(\"연결 시도 %d/%d\\n\", retries, maxRetries);",
+      "exit": "dialing = false;",
       "reactions": [
        {
         "trigger": "",
@@ -206,7 +218,7 @@
       "to": "x",
       "trigger": "",
       "guard": "else",
-      "action": "printf(\"3번 실패 - 포기합니다\\n\");",
+      "action": "gaveUp = true;\nprintf(\"3번 실패 - 포기합니다\\n\");",
       "bend": 0
      },
      "e6": {
@@ -250,6 +262,129 @@
     }
    },
    "ioStyle": "struct"
+  }
+ ],
+ "scenarios": [
+  {
+   "name": "Connects on the first try",
+   "steps": [
+    {
+     "n": 1,
+     "set": "",
+     "expect": "online=false, dialing=true"
+    },
+    {
+     "n": 1,
+     "set": "connectOk=1",
+     "expect": "online=true, dialing=false"
+    }
+   ]
+  },
+  {
+   "name": "Incoming data does not disturb the connection",
+   "steps": [
+    {
+     "n": 1,
+     "set": "connectOk=1",
+     "expect": "online=true"
+    },
+    {
+     "n": 1,
+     "set": "connectOk=0, data=100",
+     "expect": "online=true"
+    },
+    {
+     "n": 1,
+     "set": "data=50",
+     "expect": "online=true"
+    },
+    {
+     "n": 1,
+     "set": "data=0",
+     "expect": "online=true"
+    }
+   ]
+  },
+  {
+   "name": "Hangup dials again",
+   "steps": [
+    {
+     "n": 1,
+     "set": "connectOk=1",
+     "expect": "online=true, dialing=false"
+    },
+    {
+     "n": 1,
+     "set": "connectOk=0, hangup=1",
+     "expect": "online=false, dialing=true"
+    }
+   ]
+  },
+  {
+   "name": "No answer: timeout after 200 calls",
+   "steps": [
+    {
+     "n": 199,
+     "set": "",
+     "expect": "dialing=true"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "dialing=false, gaveUp=false"
+    }
+   ]
+  },
+  {
+   "name": "Three failures and it gives up",
+   "steps": [
+    {
+     "n": 1,
+     "set": "",
+     "expect": "dialing=true, gaveUp=false"
+    },
+    {
+     "n": 1,
+     "set": "connectFail=1",
+     "expect": "dialing=false, gaveUp=false"
+    },
+    {
+     "n": 100,
+     "set": "connectFail=0",
+     "expect": "dialing=true"
+    },
+    {
+     "n": 1,
+     "set": "connectFail=1",
+     "expect": "dialing=false, gaveUp=false"
+    },
+    {
+     "n": 100,
+     "set": "connectFail=0",
+     "expect": "dialing=true"
+    },
+    {
+     "n": 1,
+     "set": "connectFail=1",
+     "expect": "dialing=false, gaveUp=true"
+    }
+   ]
+  },
+  {
+   "name": "maxRetries=1: gives up after the first failure",
+   "steps": [
+    {
+     "n": 1,
+     "set": "maxRetries=1",
+     "expect": "dialing=true",
+     "init": true
+    },
+    {
+     "n": 1,
+     "set": "connectFail=1",
+     "expect": "dialing=false, gaveUp=true"
+    }
+   ]
   }
  ]
 }

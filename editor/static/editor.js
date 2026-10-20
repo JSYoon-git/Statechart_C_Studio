@@ -17,6 +17,8 @@ let lastGen = null;                        // {pkg, files, warnings}
 let curFile = null;
 let buildErrors = [];                      // compiler errors / warnings of the last Build
 
+/* the drawing without the scenarios (step tables): what Generate / Build / Simulate / Tidy compare against */
+function projSig() { return JSON.stringify(project, (k, v) => (k === "scenarios" ? undefined : v)); }
 function uid(p) { return p + Math.random().toString(36).slice(2, 9); }
 function cls() { return project.classes[cur]; }
 function chart() {
@@ -89,12 +91,20 @@ function save() {
    whole project is compared, so any change at all turns the button blue again); Build: amber = warnings, red = failed */
 let genSig = null, buildSig = null, buildState = "", genBusy = false, buildBusy = false;
 function paintButtons() {
-  const sig = JSON.stringify(project);
+  const sig = projSig();
   const set = (el, st) => { el.classList.remove("busy", "ok", "warn", "fail"); if (st) el.classList.add(st); };
   set($("bGen"), genBusy ? "busy" : genSig === sig ? "ok" : "");
   set($("bCompile"), buildBusy ? "busy" : buildSig === sig ? buildState : "");
   $("untidy").hidden = !(tidySig && tidySig === sig);          // only while nothing was changed after Tidy
+  const ready = scenarioReady();                                // Scenario tab: only for a drawing whose code was generated and built
+  const tb = $("scTabBtn");
+  tb.disabled = !ready;
+  tb.title = ready ? _t("Unit test: a step table (inputs, expected states and values) that runs against the generated code")
+                   : _t("Locked: press Build first — the scenarios run the generated code, so it must build without errors");
+  if (typeof scOnReady === "function") scOnReady(ready);
 }
+/* Generate C + Build succeeded for the drawing as it is now (a warning is still a successful build) */
+function scenarioReady() { return buildSig !== null && buildSig === projSig() && (buildState === "ok" || buildState === "warn"); }
 let tidySig = null;
 
 // ------------------------------------------------------------------ geometry helpers
@@ -215,6 +225,7 @@ function render() {
   $("emptyHint").hidden = Object.keys(nodes()).length > 0;
   const ns = Object.values(nodes());
   const states = ns.filter(isState).sort((a, b) => depth(a) - depth(b));
+  const live = typeof simActiveSet === "function" ? simActiveSet() : null;       // states of the running simulation (sim.js)
   const gS = el("g", {}, world), gE = el("g", {}, world), gP = el("g", {}, world), gH = el("g", {}, world);
   const gN = el("g", { class: "notes" }, null);
   world.insertBefore(gN, gH);                       // above states and transitions, below the handles
@@ -238,7 +249,8 @@ function render() {
 
   for (const n of states) {
     const isSel = sel && sel.t === "node" && sel.id === n.id;
-    const g = el("g", { class: "state" + (isSel ? " sel" : "") + (dropTarget === n.id ? " drop" : "") + markClass("node", n.id), "data-id": n.id }, gS);
+    const lv = live && live.has(n.id) ? (children(n.id).length || n.and ? " activeParent" : " active") : "";
+    const g = el("g", { class: "state" + lv + (isSel ? " sel" : "") + (dropTarget === n.id ? " drop" : "") + markClass("node", n.id), "data-id": n.id }, gS);
     el("rect", { class: "body", x: n.x, y: n.y, width: n.w, height: n.h, rx: 10, ry: 10 }, g);
     const t = el("text", { class: "name", x: n.x + 9, y: n.y + 15 }, g);
     t.textContent = n.name + (n.and ? "  ⫴" : "");
@@ -390,6 +402,24 @@ function edgeGeom(e, a, b) {
   const dx = cb.x - ca.x, dy = cb.y - ca.y, L = Math.hypot(dx, dy) || 1;
   const nx = -dy / L, ny = dx / L, bend = e.bend || 0;
   const ctrl = { x: mx + nx * bend * 2, y: my + ny * bend * 2 };
+  if (bend && !e.sa && !e.ta) {
+    /* a bent line leaves / enters where the curve itself crosses the outlines (not where a straight ray would), so the
+       arrow head always sits on the outline and points along the curve, even when the bend handle is dragged far away */
+    const q = (t) => ({ x: (1 - t) * (1 - t) * ca.x + 2 * t * (1 - t) * ctrl.x + t * t * cb.x, y: (1 - t) * (1 - t) * ca.y + 2 * t * (1 - t) * ctrl.y + t * t * cb.y });
+    const within = (n, pt) => isState(n) ? pt.x >= n.x && pt.x <= n.x + n.w && pt.y >= n.y && pt.y <= n.y + n.h : Math.hypot(pt.x - n.x, pt.y - n.y) <= radius(n);
+    let lo = 0, hi = 0.5;                                // last t still inside a
+    if (within(a, q(0.5))) lo = 0.5; else { for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (within(a, q(m))) lo = m; else hi = m; } }
+    let l2 = 0.5, h2 = 1;                                // first t already inside b
+    if (within(b, q(0.5))) h2 = 0.5; else { for (let i = 0; i < 24; i++) { const m = (l2 + h2) / 2; if (within(b, q(m))) h2 = m; else l2 = m; } }
+    const t0 = lo, t1 = h2;
+    if (t1 - t0 > 0.02) {
+      const P0 = q(t0), P2 = q(t1);
+      const k0 = (1 - t0) * (1 - t1), k1 = t0 * (1 - t1) + t1 * (1 - t0), k2 = t0 * t1;
+      const C = { x: k0 * ca.x + k1 * ctrl.x + k2 * cb.x, y: k0 * ca.y + k1 * ctrl.y + k2 * cb.y };
+      const sl = Math.hypot(C.x - P0.x, C.y - P0.y) || 1;
+      return { d: `M${P0.x} ${P0.y} Q${C.x} ${C.y} ${P2.x} ${P2.y}`, mid: q((t0 + t1) / 2), nx, ny, ca, cb, start: P0, end: P2, dir: { x: (C.x - P0.x) / sl, y: (C.y - P0.y) / sl } };
+    }
+  }
   const p0 = e.sa && isState(a) ? anchorPt(a, e.sa) : boundary(a, bend ? ctrl : cb);
   const p1 = e.ta && isState(b) ? anchorPt(b, e.ta) : boundary(b, bend ? ctrl : ca);
   const mid = { x: 0.25 * p0.x + 0.5 * ctrl.x + 0.25 * p1.x, y: 0.25 * p0.y + 0.5 * ctrl.y + 0.25 * p1.y };
@@ -1188,8 +1218,8 @@ function stateProps(P, n) {
     } } }, "+ region"));
     P.append(h("label", {}, _t("Regions (top → bottom)")), card);
   }
-  P.append(h("label", {}, "Entry action"), bound(n, "entry", { area: true, rows: 3, ph: "me->count++;" }));
-  P.append(h("label", {}, "Exit action"), bound(n, "exit", { area: true, rows: 2 }));
+  P.append(h("label", {}, "Entry action"), bound(n, "entry", { area: true, rows: 3, ph: "cnt = 0;\nled = true;" }));
+  P.append(h("label", {}, "Exit action"), bound(n, "exit", { area: true, rows: 2, ph: "led = false;" }));
   P.append(h("label", {}, _t("Internal reactions (no exit / entry)")));
   n.reactions = n.reactions || [];
   const box = h("div", {});
@@ -1264,7 +1294,9 @@ function edgeProps(P, e) {
 function classProps(P) {
   const c = cls();
   P.append(h("h2", {}, "Class"));
-  P.append(h("label", {}, "Name"), bound(c, "name", { cls: "ident", onchange: refreshLeft }));
+  const cname = bound(c, "name", { cls: "ident", onchange: refreshLeft });
+  if (typeof scWatchName === "function") scWatchName(cname, () => c.name, (o, n) => scRenameClass(o, n));         // scenarios follow a renamed class
+  P.append(h("label", {}, "Name"), cname);
   const tbl = (title, rows, cols, mk) => {
     P.append(h("label", {}, title));
     const t = h("table", { class: "tbl" });
@@ -1353,6 +1385,7 @@ function refreshLeft() {
       const typ = bound(a, "type", { cls: "code vtype", ph: "int", onchange: validate });
       typ.setAttribute("list", "typelist");
       const nm = bound(a, "name", { cls: "code vname", ph: "name", onchange: validate });
+      if (typeof scWatchName === "function") scWatchName(nm, () => a.name, (o, n) => scRenameVar(c.name, o, n));       // scenarios follow a renamed variable
       const prob = varProblem(c, a, i);
       if (prob) { nm.classList.add("bad"); nm.title = prob; }
       vl.append(h("div", { class: "vrow" }, typ, nm,
@@ -1693,6 +1726,14 @@ function fileHelp(n, pkg) {
   return n.endsWith(".h") ? _t("My statechart: state enum, struct (inputs, outputs, config, variables, states), X_Init / X_Main / X_isIn") :
                             _t("My statechart: X_Init (once) → X_Main (every 10 ms) → X_takeTrigger() runs the internal reactions, then at most one transition. No framework: put this .c/.h pair into the MCU project.");
 }
+function clearCode() {
+  curFile = null;
+  $("fileTabs").textContent = "";
+  $("fileNote").textContent = ""; $("fileNote").className = "fnote";
+  $("codeEdit").hidden = true; $("code").hidden = false;
+  $("code").innerHTML = '<span class="dim" data-i18n>Press Generate C to see the generated code here.</span>';
+  if (typeof applyLanguage === "function") applyLanguage();
+}
 function showFiles(gen) {
   lastGen = gen;
   const ft = $("fileTabs");
@@ -1907,7 +1948,7 @@ async function followCode() {
   try {
     if (lastGen.version !== editVersion) {          // the drawing changed: regenerate quietly
       if (validate()) return;
-      const sig = JSON.stringify(project);
+      const sig = projSig();
       const g = await api("/api/generate", project);
       g.version = editVersion; genSig = sig;
       showFiles(g);
@@ -1953,7 +1994,7 @@ async function generateC() {
   autoDeclareEvents();
   if (validate()) { showTab("problems"); flash(_t("Fix the errors in the Problems tab first")); return null; }
   if (!confirmDefects(_t("Generate"))) return null;
-  const sig = JSON.stringify(project);
+  const sig = projSig();
   genBusy = true; paintButtons();
   try {
     const g = await api("/api/generate", project);
@@ -1985,10 +2026,11 @@ async function build() {
   if (validate()) { showTab("problems"); flash(_t("Fix the errors in the Problems tab first")); return false; }
   if (!confirmDefects(_t("Build"))) return false;
   building = true;
-  const sig = JSON.stringify(project);
+  const sig = projSig();
   buildBusy = true; buildSig = null; paintButtons();
   try {
     const b = await api("/api/build", project);
+    if (sig !== projSig()) return false;          // another project (or an edit) arrived while compiling: this result is not for what is on screen
     b.version = editVersion;
     showFiles(b);
     buildErrors = b.log.split("\n").filter((l) => l.trim());
@@ -2003,6 +2045,21 @@ async function build() {
   finally { building = false; buildBusy = false; paintButtons(); }
 }
 $("bCompile").addEventListener("click", build);
+/* a project is opened already generated and built (green buttons, code on screen, Scenario tab unlocked):
+   an example, and the saved work at start. Quiet: a drawing with errors or defects is left alone (no dialogs),
+   and only with the local server - in the browser-only build the wasm compiler would be downloaded first */
+async function autoBuild() {
+  try {
+    if (serverMode === null) serverMode = await Backend.available();
+    if (!serverMode) return;
+    while (building) await new Promise((r) => setTimeout(r, 150));         // a build of the previous drawing is still running: let it end first
+    if (scenarioReady()) return;                                           // this drawing is already built
+    if (!project.classes.some((c) => Object.values((c.chart || {}).nodes || {}).some(isState))) return;     // nothing drawn yet
+    autoDeclareEvents();
+    if (validate() || defects().length) return;
+    if (await build() && buildState === "ok" && !isPhone()) showTab("code");        // show the generated code (a phone keeps the drawing)
+  } catch (e) { /* the Build button reports problems when pressed */ }
+}
 
 
 // ------------------------------------------------------------------ files
@@ -2028,6 +2085,7 @@ function loadProject(p) {
   }
   delete project.periodUs; delete project.utTest;
   cur = 0; sel = null; lastGen = null; buildErrors = []; genSig = buildSig = null;
+  clearCode();                         // the code pane must not keep showing the previous project
 
   refreshAll(); zoomFit();
 }
@@ -2039,6 +2097,7 @@ document.querySelectorAll("#newMenu button").forEach((b) => b.addEventListener("
     if (b.dataset.new === "blank") { loadProject(blankProject()); return; }
     else loadProject(await (await fetch(`examples/${b.dataset.new}.json`)).json());
     flash(_t("Ctrl+Z brings the previous project back"), true);
+    autoBuild();
   } catch (e) { alert(e.message); }
 }));
 $("bSave").addEventListener("click", downloadProject);
@@ -2082,13 +2141,13 @@ $("optimize").addEventListener("click", () => {
     if (a && b) { t.x += b.x - a.x; t.y += b.y - a.y; }
   }
   save(); render(); zoomFit();
-  tidySig = JSON.stringify(project); paintButtons();
+  tidySig = projSig(); paintButtons();
   const b = r.before, a = r.after;
   flash(_t("Tidied — lines through states {0}→{1}, crossings {2}→{3}, label overlaps {4}→{5} (Ctrl+Z to undo)",
           b.through, a.through, b.crossings, a.crossings, b.labelHits, a.labelHits), true);
 });
 $("untidy").addEventListener("click", () => {
-  if (!tidySig || tidySig !== JSON.stringify(project)) return;
+  if (!tidySig || tidySig !== projSig()) return;
   tidySig = null;
   undo();                                  // the snapshot Tidy took is the layout before it
   zoomFit();
@@ -2112,10 +2171,10 @@ $("bLang").addEventListener("click", () => {
   try { firstVisit = !localStorage.getItem("scstudio.welcomed"); } catch (e) { firstVisit = true; }
   if (!p) {
     try { p = await (await fetch("examples/blink.json")).json(); } catch (e) { p = blankProject(); }
-
   }
   project = p;
   loadProject(p);
+  autoBuild();                                   // whatever is on screen at start (example or the saved work) is built, if it can be
   undoStack.length = 0;
   setTool("select");
   requestAnimationFrame(() => { lastCanvasLeft = svg.getBoundingClientRect().left; zoomFit(); });

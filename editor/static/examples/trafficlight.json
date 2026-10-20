@@ -468,5 +468,198 @@
    },
    "ioStyle": "struct"
   }
+ ],
+ "scenarios": [
+  {
+   "name": "Normal cycle: red 200, green 300, yellow 100 calls",
+   "steps": [
+    {
+     "n": 0,
+     "set": "",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 199,
+     "set": "",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 299,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=2"
+    },
+    {
+     "n": 99,
+     "set": "",
+     "expect": "lamp=2"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=0"
+    }
+   ]
+  },
+  {
+   "name": "Pedestrian in the first cycle: green simply starts over",
+   "steps": [
+    {
+     "n": 200,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "pedestrian=1",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 299,
+     "set": "pedestrian=0",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=2"
+    }
+   ]
+  },
+  {
+   "name": "Pedestrian after 2 cycles: green is cut short",
+   "steps": [
+    {
+     "n": 200,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 300,
+     "set": "",
+     "expect": "lamp=2"
+    },
+    {
+     "n": 100,
+     "set": "",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 200,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "pedestrian=1",
+     "expect": "lamp=2"
+    }
+   ]
+  },
+  {
+   "name": "setGreen shortens the green time to 50 calls",
+   "steps": [
+    {
+     "n": 1,
+     "set": "setGreen=500",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 198,
+     "set": "setGreen=0",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 49,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "",
+     "expect": "lamp=2"
+    }
+   ]
+  },
+  {
+   "name": "Fault shows lamp 3 until reset",
+   "steps": [
+    {
+     "n": 10,
+     "set": "",
+     "expect": "lamp=0"
+    },
+    {
+     "n": 1,
+     "set": "fault=1",
+     "expect": "lamp=3"
+    },
+    {
+     "n": 300,
+     "set": "fault=0",
+     "expect": "lamp=3"
+    }
+   ]
+  },
+  {
+   "name": "Reset returns to the light that was on",
+   "steps": [
+    {
+     "n": 200,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "fault=1",
+     "expect": "lamp=3"
+    },
+    {
+     "n": 1,
+     "set": "fault=0, reset=1",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "reset=0",
+     "expect": "lamp=1"
+    }
+   ]
+  },
+  {
+   "name": "hurryAfterCycles=1: the pedestrian cuts the very first green short",
+   "steps": [
+    {
+     "n": 0,
+     "set": "hurryAfterCycles=1",
+     "expect": "lamp=0",
+     "init": true
+    },
+    {
+     "n": 200,
+     "set": "",
+     "expect": "lamp=1"
+    },
+    {
+     "n": 1,
+     "set": "pedestrian=1",
+     "expect": "lamp=2"
+    }
+   ]
+  }
  ]
 }
