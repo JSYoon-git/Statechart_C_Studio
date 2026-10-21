@@ -4,6 +4,7 @@ It is compiled together with the generated X.c files and runs as a child process
 server. Commands on stdin, one per line:
 
     S <n> <v0> <v1> ...   set every input (all classes, in order), then call the 10 ms task n times
+    T <n> <v0> <v1> ...   the same as S but without the @@SNAP lines (the browser build replays earlier commands with it)
     R                     X_Init again with the config values of the drawing (a reset)
     I <c0> <c1> ...       X_Init again with these config values (all classes, in order)
     Q                     quit
@@ -131,7 +132,7 @@ def sim_main(pkg, gens):
         cm["vars"] = [{"name": a.name, "type": a.type, "dir": a.dir} for a in g.c.attributes if a.dir != "out"]
         meta["classes"].append(cm)
 
-    L += ["int main(void) {", "    char line[4096];", "    char* p;", "    int n;", "    int i;", "    double d;",
+    L += ["int main(void) {", "    char line[4096];", "    char* p;", "    int n;", "    int i;", "    int quiet;", "    double d;",
           "    cfg_defaults();", "    do_init();", "    snap();", f'    printf("{DONE}\\n");', "    fflush(stdout);",
           "    while (fgets(line, sizeof line, stdin) != NULL) {",
           "        if (line[0] == 'Q') {", "            break;", "        }",
@@ -139,13 +140,14 @@ def sim_main(pkg, gens):
           "        } else if (line[0] == 'I') {", "            p = line + 1;"]
     for i in range(len(cfg_order)):
         L += ["            d = strtod(p, &p);", f"            cfgv[{i}] = d;"]
-    L += ["            do_init();", "            snap();", "        } else if (line[0] == 'S') {",
-          "            p = line + 1;", "            n = (int)strtol(p, &p, 10);"]
+    L += ["            do_init();", "            snap();", "        } else if (line[0] == 'S' || line[0] == 'T') {",
+          "            quiet = line[0] == 'T';", "            p = line + 1;", "            n = (int)strtol(p, &p, 10);"]
     by = {g.n: g for g in gens}
     for cname, aname in meta["input_order"]:
         g = by[cname]
         a = next(x for x in g.ins if x.name == aname)
         L += ["            d = strtod(p, &p);", f"            {io(g, a)} = ({a.type})d;"]
-    L += ["            for (i = 0; i < n; i++) {", "                task();", "                snap();", "            }", "        }",
+    L += ["            for (i = 0; i < n; i++) {", "                task();", "                if (!quiet) {", "                    snap();", "                }",
+          "            }", "        }",
           f'        printf("{DONE}\\n");', "        fflush(stdout);", "    }", "    return 0;", "}", ""]
     return "\n".join(L), meta

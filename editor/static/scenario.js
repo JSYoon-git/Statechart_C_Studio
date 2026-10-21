@@ -286,9 +286,6 @@ function scBuild() {
   root.append(bar);
 
   // ---- notices
-  if (serverMode === false) {
-    root.append(h("div", { class: "simstale" }, _t("This online version cannot run scenarios: they run the generated C on your computer. Save the project and open it with the local server (python editor/server.py).")));
-  }
   if (!ready) {
     const b = h("button", { class: "mini primary-ish" }, "Build");
     b.addEventListener("click", () => build());

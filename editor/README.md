@@ -141,8 +141,16 @@ There is no manual simulation screen (removed on request: scenarios cover it). R
 the user's module) into `sim.exe` and runs it as a child process of the server (`sim.py`). Every call of the
 10 ms task answers with the active states (`X_isIn`), the outputs as the caller got them and every other
 variable. The shown moment's active states light up on the drawing (green = leaf, outlined = composite).
-Needs the local server (not the GitHub Pages build). A hung user loop is killed after 10 s.
+A hung user loop is killed after 10 s.
 API: `/api/sim/start|step|reset|stop|scenario`.
+
+**GitHub Pages build (2026-10-22)**: scenarios run there too, with no server. `static/py/sim_web.py` (Pyodide; source
+`editor/sim_web.py`) answers the same `/api/sim/*` calls: the harness and generated C are built by the wasm clang +
+`lld` (`static/vendor/clang/`, binji/wasm-clang, Apache-2.0) in `sim_worker.js` and run there as a WASI module.
+A wasm run cannot wait for the next stdin line, so each command replays the commands since the last reset (earlier
+`S` ones as the silent `T`) and keeps the last answer; timeout = the worker is killed after 10 s. First use downloads
+Pyodide + clang + lld (~60 MB, then cached). Test it without the server: `python -m http.server 8771 --directory
+editor/static` (launch config `statechart-static`) and run the scenarios of the 9 examples.
 
 ## Scenarios = unit tests as step tables (2026-10-20)
 

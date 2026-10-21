@@ -32,7 +32,7 @@ function simOnEdit() { /* the next scenario run rebuilds the harness when the dr
 // ------------------------------------------------------------------ server calls
 async function simCall(path, body) {
   if (serverMode === null) serverMode = await Backend.available();
-  if (!serverMode) throw new Error(_t("The scenarios run the generated C on this computer, so they need the local server (python server.py)."));
+  if (!serverMode) return Backend.simCall(path, body);        // GitHub Pages: wasm clang + lld in a worker
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const j = await r.json();
   if (!r.ok || j.error) { const e = new Error(j.error || r.statusText); e.log = j.log; throw e; }

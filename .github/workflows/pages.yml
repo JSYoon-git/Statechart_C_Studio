@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+﻿name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
@@ -21,10 +21,11 @@ jobs:
       - name: Refresh the Python sources Pyodide loads in the browser
         run: |
           mkdir -p editor/static/py
-          cp editor/model.py codegen/sc_ir.py codegen/chart_gen.py codegen/task_c.py editor/static/py/
+          cp editor/model.py editor/scenario.py editor/sim_web.py codegen/sc_ir.py codegen/chart_gen.py codegen/task_c.py codegen/sim_c.py editor/static/py/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: editor/static
       - id: deployment
         uses: actions/deploy-pages@v4
+
