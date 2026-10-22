@@ -6,6 +6,7 @@
 !/README.ko.md
 !/LICENSE
 !/THIRD_PARTY_NOTICES.md
+!/docs/
 !/editor/
 !/codegen/
 __pycache__/

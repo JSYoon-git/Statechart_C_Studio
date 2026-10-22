@@ -8,6 +8,10 @@ An educational tool for people learning embedded systems.
 
 ---
 
+![Statechart C Studio: the LED blink example drawn as a statechart, with the generated C code below it](docs/images/en-blink-code.png)
+
+*Draw on top, read the generated C below. Green Generate C and Build mean the code is up to date and compiles.*
+
 ## Why I made this
 
 At university I took a C programming course and an object-oriented course. Each one made sense on its own.
@@ -62,6 +66,11 @@ old and small MCU compilers too.
 
 ## Scenarios: a unit test as a table
 
+![The Scenario tab: a unit test written as a table, every row PASS](docs/images/en-scenario.png)
+
+*A scenario is a table: set inputs, run 10 ms calls, check outputs.*
+
+
 A scenario is a table. Every row is one step: optionally call `X_Init` again, set some **inputs**, run some 10 ms task
 calls, then say what the **outputs** must be. Pick everything from menus (no typing of names).
 
@@ -75,6 +84,11 @@ calls, then say what the **outputs** must be. Pick everything from menus (no typ
 - All examples come with scenarios. Renaming a variable in the drawing renames it in the scenarios too.
 
 ## Examples
+
+![The washing machine example: a composite state RUNNING with four steps and a history connector](docs/images/en-washer.png)
+
+*Washing machine: a composite state, a history connector and notes that explain the drawing.*
+
 
 Every example has notes that explain the idea, in English and in Korean (the language button switches them).
 
