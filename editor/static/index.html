@@ -43,24 +43,22 @@
 <div id="main">
   <aside id="left">
     <section>
-      <h3>Package</h3>
-      <input id="pkgName" class="ident" spellcheck="false">
-    </section>
-    <section>
       <h3>Classes <button class="mini" id="addClass" title="Add a class">+</button></h3>
       <ul id="classList" class="list"></ul>
-      <div class="hint" data-i18n>Click a class name to edit its X_Main, operations and links.</div>
     </section>
     <section>
       <h3><span>Variables <span id="varOwner" class="owner"></span></span></h3>
       <div id="varList"></div>
       <div class="hint" data-i18n title="Input = an X_Main parameter i_name; output = the return value (one) or o_name pointers (several); config = an X_Init parameter c_name; internal = a struct member. In guards and actions just write the name, e.g. [(button == true) &amp;&amp; (count &gt;= 3)], count++;">Guards and actions use the names ⓘ</div>
     </section>
-    <section>
+    <details id="settings">
+      <summary data-i18n>Settings</summary>
+      <h3>Package</h3>
+      <input id="pkgName" class="ident" spellcheck="false" aria-label="Package name">
       <h3>Types / includes</h3>
-      <textarea id="types" rows="3" spellcheck="false" placeholder="#include &lt;stdio.h&gt;"></textarea>
+      <textarea id="types" rows="3" aria-label="Types and includes" spellcheck="false" placeholder="#include &lt;stdio.h&gt;"></textarea>
       <div class="hint" data-i18n>One per line, copied into the header as is.</div>
-    </section>
+    </details>
   </aside>
   <div id="leftResize" title="Drag to resize the left panel (double-click = default width)"></div>
   <button id="leftToggle" title="Hide / show the left panel">‹</button>

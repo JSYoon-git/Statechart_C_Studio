@@ -1372,23 +1372,26 @@ function refreshLeft() {
                   ["config", _t("Config"), _t("config = X_Init parameter c_name, set once"), _t("fixed value, set in X_Init")],
                   ["local", _t("Internal"), _t("internal = struct member (counters, state data)"), _t("your own data: counters, flags")]];
   // column names, so a first-time reader knows which box is which
-  vl.append(h("div", { class: "vhead" }, h("span", { title: _t("the C type, e.g. bool, uint8_t, uint16_t, int") }, _t("Type")),
+  const colHead = (dir) => h("div", { class: "vhead g-" + dir }, h("span", { title: _t("the C type, e.g. bool, uint8_t, uint16_t, int") }, _t("Type")),
     h("span", { title: _t("the name you use in guards and actions") }, _t("Name")),
-    h("span", { title: _t("the value it starts with (a config value is the value main.c passes to X_Init)") }, _t("Initial")), h("span")));
+    h("span", { title: _t("the value it starts with (a config value is the value main.c passes to X_Init)") }, _t("Initial")), h("span"));
   for (const [dir, title, tip, sub] of GROUPS) {
     const mine = c.attributes.map((a, i) => [a, i]).filter(([a]) => (a.dir || "local") === dir);
     vl.append(h("div", { class: "vgroup " + dir, title: tip },
       h("span", { class: "vtitle" }, title, mine.length ? h("span", { class: "vcount" }, ` ${mine.length}`) : null),
       h("span", { class: "vsub" }, sub),
       h("button", { class: "mini", "data-addvar": dir, title: _t("Add to {0}", title), on: { click: () => addVariable(dir) } }, "+")));
+    if (mine.length) vl.append(colHead(dir));                                     // column names inside every group that has variables
     for (const [a, i] of mine) {
       const typ = bound(a, "type", { cls: "code vtype", ph: "int", onchange: validate });
       typ.setAttribute("list", "typelist");
+      typ.setAttribute("aria-label", _t("Type"));
       const nm = bound(a, "name", { cls: "code vname", ph: "name", onchange: validate });
+      nm.setAttribute("aria-label", _t("Name"));
       if (typeof scWatchName === "function") scWatchName(nm, () => a.name, (o, n) => scRenameVar(c.name, o, n));       // scenarios follow a renamed variable
       const prob = varProblem(c, a, i);
       if (prob) { nm.classList.add("bad"); nm.title = prob; }
-      vl.append(h("div", { class: "vrow" }, typ, nm,
+      vl.append(h("div", { class: "vrow g-" + dir }, typ, nm,
         bound(a, "default", { cls: "code vinit", ph: (a.type || "").trim() === "bool" ? "false" : "0", title: _t("initial value") }),
         h("button", { class: "del", title: _t("Delete variable"), on: { click: () => { snapshot(); c.attributes.splice(i, 1); refreshAll(); } } }, "✕")));
     }
@@ -1415,6 +1418,11 @@ function addVariable(dir) {
   if (last) { last.focus(); last.select(); }
 }
 $("pkgName").addEventListener("input", (ev) => { project.package = ev.target.value; save(); });
+{ // Settings (package, types) are rarely touched: folded by default, the choice is remembered
+  const st = $("settings");
+  try { st.open = localStorage.getItem("scstudio.settingsOpen") === "1"; } catch (e) { /* closed */ }
+  st.addEventListener("toggle", () => { try { localStorage.setItem("scstudio.settingsOpen", st.open ? "1" : "0"); } catch (e) { /* ignore */ } });
+}
 $("types").addEventListener("change", (ev) => { snapshot(); project.types = ev.target.value.split("\n").filter((s) => s.trim()); save(); });
 $("addClass").addEventListener("click", () => {
   snapshot();
@@ -2189,6 +2197,7 @@ const TOUR = [
   { sel: "#left", t: "Variables", b: "INPUT comes in from outside (a button), OUTPUT goes out (an LED), CONFIG is a fixed setting, INTERNAL is the chart's own memory such as counters. In guards and actions just write the name.", phone: false },
   { sel: "#bGen", t: "Generate C", b: "Turns the drawing into C code (X.c / X.h). Change the drawing and press it again." },
   { sel: "#bCompile", t: "Build", b: "Compiles that C code right here in your browser and lists warnings and errors in Problems. Nothing is sent to a server." },
+  { sel: "#scTabBtn", t: "Try it: Scenario", b: "After a successful Build this tab opens. Each row sets inputs and checks outputs; Run presses one row at a time on the real generated C, and the drawing shows the current state." },
   { sel: "#bSave", t: "Keep your work", b: "Your drawing stays in this browser. Save stores it as a file on your computer; Open loads it back." },
 ];
 let tourStep = 0, tourOn = false;
