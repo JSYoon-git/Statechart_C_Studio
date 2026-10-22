@@ -1044,6 +1044,8 @@ function h(tag, attrs, ...kids) {
   return e;
 }
 /* text input bound to obj[key]; one undo snapshot per focus */
+/* UI texts say X_Main / X_Init in general; for the class that is open show its real names (Led_Main, Led_Init) */
+const classNamed = (c, t) => t.replace(/X_(Main|Init)/g, c.name + "_$1");
 function bound(obj, key, opts) {
   opts = opts || {};
   const tag = opts.area ? "textarea" : "input";
@@ -1309,13 +1311,13 @@ function classProps(P) {
     P.append(t, h("button", { class: "mini", on: { click: () => { snapshot(); rows.push(mk()); refreshAll(); } } }, "+ add"));
   };
   c.attributes = c.attributes || []; c.operations = c.operations || []; c.assocs = c.assocs || [];
-  P.append(h("label", {}, _t("X_Main arguments")));
+  P.append(h("label", {}, classNamed(c, _t("X_Main arguments"))));
   const io = h("select", { on: { change: () => { snapshot(); if (io.value === "struct") c.ioStyle = "struct"; else delete c.ioStyle; refreshAll(); } } },
     h("option", { value: "params" }, _t("parameters (i_ / return / o_)")), h("option", { value: "struct" }, _t("structs (X_In / X_Out)")));
   io.value = c.ioStyle === "struct" ? "struct" : "params";
   const [hint, warn] = argHint(c);
   P.append(io, h("pre", { class: "sig" }, sigPreviewText(c)), h("div", { class: "hint" + (warn ? " warn" : "") }, hint));
-  P.append(h("label", {}, _t("X_Main body (empty = {0}_takeTrigger(me);)", c.name)),
+  P.append(h("label", {}, classNamed(c, _t("X_Main body (empty = {0}_takeTrigger(me);)", c.name))),
            bound(c, "main", { area: true, rows: 3, ph: `${c.name}_takeTrigger(me);` }));
   P.append(h("label", {}, _t("Operations (call them as Class_op(me, …))")));
   c.operations.forEach((o, i) => {
@@ -1332,7 +1334,7 @@ function classProps(P) {
   } } }, "+ operation"));
   tbl("Associations (link name / target class)", c.assocs, [["name", "itsX", "50%"], ["class", "Class", "50%"]],
       () => ({ name: "its" + (project.classes.find((x) => x !== c) || c).name, class: (project.classes.find((x) => x !== c) || c).name }));
-  P.append(h("label", {}, _t("Initializer code (runs in X_Init before startBehavior)")), bound(c, "init", { area: true, rows: 2 }));
+  P.append(h("label", {}, classNamed(c, _t("Initializer code (runs in X_Init before startBehavior)"))), bound(c, "init", { area: true, rows: 2 }));
   P.append(h("p", { class: "help" },
     _t("Drawing: make boxes with the state tool (S), drag between states with the transition tool (T), mark the start with the default transition (D). "),
     _t("A composite state is a state drawn inside a bigger one. Generate C shows the code, Build checks it for compiler errors and warnings.")));
@@ -1375,11 +1377,12 @@ function refreshLeft() {
   const colHead = (dir) => h("div", { class: "vhead g-" + dir }, h("span", { title: _t("the C type, e.g. bool, uint8_t, uint16_t, int") }, _t("Type")),
     h("span", { title: _t("the name you use in guards and actions") }, _t("Name")),
     h("span", { title: _t("the value it starts with (a config value is the value main.c passes to X_Init)") }, _t("Initial")), h("span"));
+  const named = (t) => classNamed(c, t);
   for (const [dir, title, tip, sub] of GROUPS) {
     const mine = c.attributes.map((a, i) => [a, i]).filter(([a]) => (a.dir || "local") === dir);
-    vl.append(h("div", { class: "vgroup " + dir, title: tip },
+    vl.append(h("div", { class: "vgroup " + dir, title: named(tip) },
       h("span", { class: "vtitle" }, title, mine.length ? h("span", { class: "vcount" }, ` ${mine.length}`) : null),
-      h("span", { class: "vsub" }, sub),
+      h("span", { class: "vsub" }, named(sub)),
       h("button", { class: "mini", "data-addvar": dir, title: _t("Add to {0}", title), on: { click: () => addVariable(dir) } }, "+")));
     if (mine.length) vl.append(colHead(dir));                                     // column names inside every group that has variables
     for (const [a, i] of mine) {
